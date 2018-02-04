@@ -147,4 +147,6 @@ if (config.build.bundleAnalyzerReport) {
   webpackConfig.plugins.push(new BundleAnalyzerPlugin())
 }
 
+webpackConfig.plugins.push(new GenerateSourcePlugin())
+
 module.exports = webpackConfig
