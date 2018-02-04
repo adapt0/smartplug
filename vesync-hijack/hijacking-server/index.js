@@ -1,0 +1,471 @@
+/////////////////////////////////////////////////////////////////////////////
+/** @file
+Etekcity/Vesync smart plug firmware hijacking server
+
+# Periodically sends out AirKiss packets to have smart plugs join our WiFi
+# Listens for UDP announcements from joined plugs
+# Initiates a TCP connection with joined plugs, instructs them to use our web server
+# Accepts WebSocket requests from newly configured plugs, initiates a firmware upgrade
+# Serves up bootstrap firmware images (user1.bin/user2.bin)
+# Serves up our final complete image (firmware.bin)
+
+\copyright Copyright (c) 2018 Chris Byrne. All rights reserved.
+Licensed under the MIT License. Refer to LICENSE file in the project root. */
+/////////////////////////////////////////////////////////////////////////////
+
+const ChildProcess = require('child_process');
+const commander = require('commander');
+const dgram = require('dgram'); 
+const fs = require('fs');
+const http = require('http');
+const morgan = require('morgan');
+const net = require('net');
+const os = require('os');
+const path = require('path');
+const WebSocket = require('ws');
+
+/////////////////////////////////////////////////////////////////////////////
+/// CRC8 calculation using 0x8C polynomial (reversed 1-wire?)
+/// https://github.com/EspressifApp/EsptouchForAndroid/blob/master/src/com/espressif/iot/esptouch/util/CRC8.java
+const crc8Esptouch = (() => {
+    const polyNom = 0x8c;
+    const initial = 0x00;
+
+    const table = new Array(256);
+    for (let i = 0; i < table.length; ++i) {
+        let remainder = i;
+        for (let bit = 0; bit < 8; ++bit) {
+            if (remainder & 0x1) {
+                remainder = (remainder >>> 1) ^ polyNom;
+            } else {
+                remainder >>>= 1;
+            }
+        }
+        table[i] = (remainder & 0xffff);
+    }
+
+    function crc8(bytes) {
+        // special case for string
+        if ('string' === typeof(bytes)) return crc8(Buffer.from(bytes));
+
+        let value = initial;
+        for (let i = 0; i < bytes.length; ++i) {
+            const b = bytes[i] ^ value;
+            value = (table[b & 0xff] ^ ((value << 8) & 0xffff));
+        }
+
+        return value & 0xff;
+    }
+
+    return crc8;
+})();
+
+/////////////////////////////////////////////////////////////////////////////
+/// elapsed seconds (monotomic)
+const elapsedSeconds = () => {
+    const [seconds, nanos] = process.hrtime();
+    return seconds + nanos / 1e9;
+};
+
+/////////////////////////////////////////////////////////////////////////////
+/// our hijack servers
+class VesyncHijack {
+    constructor() {
+        // grab our version from package.json
+        const packageJson = require('./package.json');
+        this.version_ = packageJson.version;
+
+        //
+        this.deviceConfigPort_ = 41234;
+        this.listenPort_ = 18266;
+        this.httpPort_ = 17273;
+
+        // airkiss address + port
+        this.mutlicastAddr_ = '234.100.100.100';
+        this.multicastPort_ = 7001;
+
+        this.ssidHidden_ = true;
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+    /// spin up servers
+    async begin() {
+        // parse command line
+        commander
+            .version(this.version_)
+            .option('-p, --password <value>')
+            .parse(process.argv)
+        ;
+
+        // console.log('Retrieving WiFi settings');
+        await this.getNetworkInfo_(commander.password);
+        console.log(`Using SSID "${this.apSsid_}" (${this.ipAddress_})`);
+
+        // listen for device UDP announcements, direct them to our web server
+        const f1 = this.beginUdp_();
+
+        // start our web server
+        const f2 = this.beginHttpServer_();
+
+        // kick off smart config/air kiss (beginUdp_ must be called first)
+        console.log('Sending Air Kiss...');
+        const f3 = this.beginAirKiss_();
+
+        await Promise.all([f1, f2, f3]);
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+    /// get current WiFi config
+    /// TODO: should node module, as we need the BSSID which other modules don't provide
+    getWifiInfo_() {
+        if (process.platform === 'darwin') {
+            // OS X
+            const airport = String(ChildProcess.execFileSync('system_profiler', ['SPAirPortDataType', '-detailLevel', 'basic']));
+            if (!airport) throw new Error('Failed to retrieve WiFi settings');
+            // console.log(airport);
+
+            const res = {
+                interface: /Interfaces:\s+([^\s:]+)/,
+                status:    /Status:\s+([\S]+)/,
+                phyMode:   /PHY Mode:\s+([\S]+)/,
+                ssid:      /Current Network Information:\s+([^\s]+):/,
+                bssid:     /BSSID:\s+([\S]+)/,
+            };
+
+            let success = true;
+            Object.keys(res).forEach((k) => {
+                const m = airport.match(res[k]);
+                if (!m) success = false;
+                res[k] = (m) ? m[1] : null;
+            });
+            res.success = success;
+            return res;
+        } else {
+            throw new Error(`Unsupported platform ${process.platform}`);
+        }
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+    /// retrieve network information
+    async getNetworkInfo_(apPassword) {
+        // find local wifi device
+        const res = this.getWifiInfo_();
+        if (!res || !res.success) {
+            throw new Error('Failed to find WiFi interface');
+        }
+        // console.log(res, state);
+        if ('connected' !== (res.status || '').toLowerCase()) {
+            throw new Error(`WiFi '${res.interface} is disconnected?`);
+        }
+
+        // fill in SSID
+        this.apSsid_ = res.ssid;
+        this.apBssid_ = res.bssid.split(':').map(b => parseInt(b, 16));
+
+        // AP password
+        if (!apPassword) throw new Error('Need to specify your WiFi password (-p)');
+        this.apPass_ = apPassword;
+
+        // retrieve network interface info
+        let itf = os.networkInterfaces()[res.interface];
+        if (!itf) throw new Error(`Not such network interface '${res.interface}'`);
+        itf = itf.find(i => 'IPv4' === i.family);
+        if (!itf) throw new Error(`Not such IPv4 network interface '${res.interface}'`);
+
+        //
+        this.ipAddress_ = itf.address;
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+    /// begin listening for device UDP announcements
+    async beginUdp_() {
+        // UDP socket for Air Kiss + new device announcements
+        this.udpSocket_ = dgram.createSocket('udp4');
+        await new Promise((resolve) => {
+            this.udpSocket_.bind(this.listenPort_, this.ipAddress_, resolve);
+            console.log(`Listening for devices on UDP port ${this.listenPort_}`);
+        });
+        this.udpSocket_.setMulticastInterface(this.ipAddress_);
+        this.udpSocket_.setBroadcast(true);
+        this.udpSocket_.setMulticastTTL(1);
+
+        this.udpLastDevice_ = null;
+        this.udpLastDeviceTime_ = 0;
+
+        this.udpSocket_.on('message', async (data, from) => {
+            // console.log(data);
+            // reply: 0x1b + MAC + IP
+
+            const ipDevice = from.address;
+
+            // ignore multiple packets from the same device in a short period of time
+            if (ipDevice === this.udpLastDevice_ && ((elapsedSeconds() - this.udpLastDeviceTime_) < 3)) {
+                return;
+            }
+            this.udpLastDevice_ = ipDevice;
+            this.udpLastDeviceTime_ = elapsedSeconds();
+
+            let client = null;
+            try {
+                client = await new Promise((resolve) => {
+                    const c = net.createConnection(
+                        this.deviceConfigPort_, ipDevice,
+                        () => resolve(c)
+                    );
+                });
+                console.log(`Connected to device ${ipDevice}`);
+
+                const clientSend = (json) => {
+                    return new Promise((resolve) => {
+                        const msg = JSON.stringify(json);
+                        // console.log('<=', msg);
+                        client.write( Buffer.concat([
+                            Buffer.from([ msg.length ]),
+                            Buffer.from(msg),
+                        ]), resolve );
+                    });
+                };
+
+                // trigger configure
+                await clientSend({
+                    'uri' : '/beginConfigRequest',
+                    'wifiID' : this.apSsid_,
+                    'wifiPassword' : this.apPass_,
+                    'account' : 'dummyAccount',
+                    'key' : 123,
+                    'serverIP' : this.ipAddress_,
+                });
+
+            } finally {
+                client.end();
+                client = null;
+            }
+        });
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+    /// generate packet lengths for air kiss protocol
+    airKissPacketLengths_() {
+        // https://github.com/EspressifApp/EsptouchForAndroid/blob/master/src/com/espressif/iot/esptouch/protocol/DatumCode.java
+        // define by the Esptouch protocol, all of the datum code should add 1 at last to prevent 0
+        const extraLength = 40;
+
+        // gather data bytes to encode
+        const ipAddressBytes = this.ipAddress_.split('.').map(b => parseInt(b));
+        let dataBytes = Buffer.concat([
+            Buffer.from([
+                0,                              // total length (filled in below)
+                this.apPass_.length,            // AP password length
+                crc8Esptouch(this.apSsid_),     // SSID CRC8
+                crc8Esptouch(this.apBssid_),    // BSSID CRC8
+                0                               // totalXor (filled in below)
+            ]),
+            Buffer.from(ipAddressBytes),        // ipAddress
+            Buffer.from(this.apPass_),          // AP Password
+            Buffer.from(this.apSsid_),          // AP SSID (kept if hidden)
+        ]);
+
+        // total data byte length
+        const totalLength = dataBytes.length;
+        dataBytes[0] = totalLength;
+
+        // XOR data bytes
+        const totalXor = dataBytes.reduce((b, out) => out ^ b, 0);
+        dataBytes[4] = totalXor;
+
+        // if SSID isn't hidden, then remove from payload
+        // note that we needed it in the payload for totalLength + totalXor calculations
+        if (!this.ssidHidden_) dataBytes = dataBytes.slice(0, dataBytes.length - this.apSsid_.length);
+
+        const packetLengths = [];
+        for (let seq = 0; seq < dataBytes.length; ++seq) {
+            const b = dataBytes[seq];
+            const sum = crc8Esptouch([b, seq]);
+
+            // https://github.com/EspressifApp/EsptouchForAndroid/blob/master/src/com/espressif/iot/esptouch/protocol/DataCode.java
+            //
+            // one data format:(data code should have 2 to 65 data)
+            // 
+            //              control byte    high 4 bits    low 4 bits 
+            // 1st 9bits:       0x0          crc(high)      data(high)
+            // 2nd 9bits:       0x1             sequence header
+            // 3rd 9bits:       0x0          crc(low)       data(low)
+            // 
+            // sequence header: 0,1,2,...
+            //
+            packetLengths.push( extraLength + (           (sum & 0xF0)       | (b >> 4 ) ));
+            packetLengths.push( extraLength + ((1 << 8) | (          seq & 0xFF        ) ));
+            packetLengths.push( extraLength + (           ((sum & 0xF) << 4) | (b & 0xF) ));
+        }
+
+        // console.log( packetLengths.map((x) => x.toString(10).padStart(3, ' ')).join('\n') );
+        return packetLengths;
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+    /// start sending out smart config/air kiss packets
+    /// https://github.com/EspressifApp/EsptouchForAndroid/blob/master/src/com/espressif/iot/esptouch/task/EsptouchTaskParameter.java
+    /// https://github.com/EspressifApp/EsptouchForAndroid/blob/master/src/com/espressif/iot/esptouch/task/__EsptouchTask.java
+    async beginAirKiss_() {
+        const packetLengths = this.airKissPacketLengths_();
+
+        // delay for sec seconds
+        const delay = async (sec) => {
+            await new Promise((resolve) => setTimeout(resolve, sec * 1000));
+        };
+
+        // guide codes
+        const guideCode = [ 515, 514, 513, 512 ];
+        const guideCodeSecs = 2.0;
+        const guideCodeInterval = 0.008;
+        const payloadInterval = 0.008;
+
+        for (;;) {
+            // send out guide codes
+            const startGuide = elapsedSeconds();
+            while ((elapsedSeconds() - startGuide) < guideCodeSecs) {
+                for (const i in guideCode) {
+                    this.udpSocket_.send('1'.repeat(guideCode[i]), this.multicastPort_, this.mutlicastAddr_);
+                    await delay(guideCodeInterval);
+                }
+            }
+
+            // followed by our payload repeated a couple of times
+            for (let repeat = 0; repeat < 3; ++repeat) {
+                for (const i in packetLengths) {
+                    const len = packetLengths[i];
+                    this.udpSocket_.send('1'.repeat(len), this.multicastPort_, this.mutlicastAddr_);
+                    await delay(payloadInterval);
+                }
+                await delay(0.5);
+            }
+            await delay(0.5);
+        }
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+    /// spin up our HTTP server
+    /// handles static requests + WebSocket
+    beginHttpServer_() {
+        // rolling our own HTTP handler
+        // was having difficulty with express' handling of vesync requests :(
+        const staticPath = path.join(__dirname, 'assets');
+        const httpLogger = morgan('combined');
+        this.httpServer_ = http.createServer((req, res) => {
+            httpLogger(req, res, () => {});
+
+            // determine path, checking that it doesn't escape
+            let filePath = path.resolve(path.join(staticPath, req.url));
+            if (!filePath.startsWith(staticPath)) {
+                res.writeHead(404);
+                res.end();
+                return;
+            }
+
+            // stat requested file
+            let stat = null;
+            try {
+                stat = fs.statSync(filePath);
+                if (stat.isDirectory()) {
+                    // index fallback
+                    filePath = path.join(filePath, 'index.html');
+                    stat = fs.statSync(filePath);
+                }
+            } catch (e) {
+                stat = null;
+            }
+
+            //
+            if (!stat || !stat.isFile()) {
+                res.writeHead(404);
+                res.end();
+                return;
+            }
+
+            try {
+                if ('GET' === req.method || 'HEAD' === req.method) {
+                    res.writeHead(200, {
+                        'Content-Length': stat.size
+                    });
+
+                    if ('GET' === req.method) {
+                        // https://stackoverflow.com/questions/10046039/nodejs-send-file-in-response
+                        fs.createReadStream(filePath).pipe(res);
+                    } else {
+                        res.end();
+                    }
+                } else {
+                    res.writeHead(400);
+                    res.end();
+                }
+
+            } catch (e) {
+                console.error(e);
+                res.writeHead(500);
+                res.end();
+                return;
+            }
+        });
+
+
+        // attach WebSocket handler
+        this.websocketServer_ = new WebSocket.Server({
+            path: '/gnws',
+            server: this.httpServer_,
+        });
+        this.websocketServer_.on('connection', (ws, req) => {
+            const remoteAddress = req.connection.remoteAddress;
+            console.log(`Accepted WebSocket from ${remoteAddress}`);
+
+            ws.on('message', (data) => {
+                try {
+                    const msg = JSON.parse(data);
+                    // console.log(msg);
+
+                    // verify some device details before we initiate an upgrade
+                    if (   'vesync_wifi_outlet' !== msg.deviceName
+                        || 'wifi-switch' !== msg.type)
+                    {
+                        throw new Error(`Unexpected device ${msg.deviceName} ${msg.type}`);
+                    }
+
+                    // login success
+                    const d = new Date();
+                    ws.send(JSON.stringify({
+                        uri: '/loginReply',
+                        error: 0,
+                        wd: 3,
+                        year: d.getFullYear(),
+                        month: 1 + d.getMonth(),
+                        day: d.getDate(),
+                        ms: d.getTime(),
+                        hh: 0,
+                        hl: 0,
+                        lh: 0,
+                        ll: 0
+                    }));
+
+                    if (!ws.sentUpgrade_) {
+                        console.log('Initiating device upgrade');
+                        ws.sentUpgrade_ = true;
+                        ws.send(JSON.stringify({
+                            uri: '/upgrade',
+                            url: `http://${this.ipAddress_}:${this.httpPort_}`,
+                            newVersion: '2.00',
+                        }));
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            });
+        });
+
+        //
+        console.log(`Starting web server on TCP port ${this.httpPort_}`);
+        this.httpServer_.listen(this.httpPort_);
+    }
+}
+
+// let's begin
+const vesyncHijack = new VesyncHijack();
+vesyncHijack.begin().catch(console.error);
