@@ -5,6 +5,7 @@ Web Server
 \copyright Copyright (c) 2018 Chris Byrne. All rights reserved.
 Licensed under the MIT License. Refer to LICENSE file in the project root. */
 /////////////////////////////////////////////////////////////////////////////
+#ifndef UNIT_TEST
 
 //- includes
 #include "web_server.h"
@@ -55,3 +56,5 @@ void WebServer::begin() {
 void WebServer::tick() {
     
 }
+
+#endif // UNIT_TEST

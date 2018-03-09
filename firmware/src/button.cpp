@@ -5,6 +5,7 @@ Button handler
 \copyright Copyright (c) 2018 Chris Byrne. All rights reserved.
 Licensed under the MIT License. Refer to LICENSE file in the project root. */
 /////////////////////////////////////////////////////////////////////////////
+#ifndef UNIT_TEST
 
 //- includes
 #include "button.h"
@@ -67,3 +68,5 @@ void Button::begin() {
 void Button::tick() {
     button_.tick();
 }
+
+#endif // UNIT_TEST

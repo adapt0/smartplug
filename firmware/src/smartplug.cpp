@@ -5,6 +5,7 @@ ESP8266 Etekcity/Vesync smart plug hacking
 \copyright Copyright (c) 2018 Chris Byrne. All rights reserved.
 Licensed under the MIT License. Refer to LICENSE file in the project root. */
 /////////////////////////////////////////////////////////////////////////////
+#ifndef UNIT_TEST
 
 //- includes
 #include "smartplug.h"
@@ -119,3 +120,5 @@ ICACHE_RAM_ATTR void SmartPlug::onFallingInterrupt_() {
 
     attachInterrupt(pulsePin, onRisingInterrupt_, RISING);
 }
+
+#endif // UNIT_TEST
