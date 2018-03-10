@@ -49,7 +49,7 @@ test_env = Environment(
         'ICACHE_RODATA_ATTR=""',
     ],
     CPPPATH=[
-        env['CPPPATH'],
+        # env['CPPPATH'],
         doctest_path,
     ],
     CXXFLAGS=env['CXXFLAGS'],
@@ -58,22 +58,25 @@ test_env = Environment(
     PROJECTTEST_DIR=env['PROJECTTEST_DIR'],
 )
 
-test_env.Append(CCFLAGS = ['-g', '-ggdb'])
+test_env.Append(
+    # ignore libc clobbering our system includes
+    CPPPATH = [p for p in env['CPPPATH'] if not '/libc/' in p],
+    CCFLAGS = ['-g', '-ggdb'],
+)
 
-# print test_env.Dump()
-
-
-def search_cpppaths(source_file):
+def search_cpppaths(source):
     """search CPPPATH for a source file"""
-    for p in env['CPPPATH']:
-        p = os.path.join(p, source_file)
+    for cpppath in env['CPPPATH']:
+        p = os.path.join(cpppath, source[0])
         if os.path.exists(p):
-            return p
+            return test_env.Object(p, **source[1])
     return source_file
 
 # minimal Arduino sources
 arduino_sources = [
-    'core_esp8266_noniso.c', 'pgmspace.cpp', 'WString.cpp'
+    ('core_esp8266_noniso.c', { "CCFLAGS": ['-Wno-absolute-value'] }),
+    ('pgmspace.cpp', {}),
+    ('WString.cpp', { "CCFLAGS": ['-include', 'cmath' ] }),
 ]
 arduino_lib = test_env.StaticLibrary(os.path.join(projectbuild_dir, 'arduino'), [
     map(search_cpppaths, arduino_sources)

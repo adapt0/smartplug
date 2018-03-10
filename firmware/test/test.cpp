@@ -8,3 +8,29 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
+
+#include <cstdio>
+
+/////////////////////////////////////////////////////////////////////////////
+extern "C" char* utoa(unsigned value, char* result, int base) {
+    switch (base) {
+    case 16:
+        sprintf(result, "%x", value);
+        return result;
+    case 10:
+    default:
+        sprintf(result, "%u", value);
+        return result;
+    }
+}
+extern "C" char* itoa(int value, char* result, int base) {
+    switch (base) {
+    case 16:
+        sprintf(result, "%x", value);
+        return result;
+    case 10:
+    default:
+        sprintf(result, "%d", value);
+        return result;
+    }
+}
