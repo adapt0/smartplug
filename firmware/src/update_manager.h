@@ -30,7 +30,8 @@ public:
 
 private:
     OnUpdating  onUpdating_;            ///< on updating callback
-    bool        inProgress_ = false;
+    int         lastPercent_ = -1;      ///< last progress %
+    bool        inProgress_ = false;    ///< OTA in progress?
 };
 
 #endif // INCLUDED__UPDATEMANAGER
