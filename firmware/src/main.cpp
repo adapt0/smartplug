@@ -11,6 +11,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 #include "button.h"
 #include "console.h"
 #include "heartbeat.h"
+#include "settings.h"
 #include "smartplug.h"
 #include "update_manager.h"
 #include "web_server.h"
@@ -59,6 +60,12 @@ void cmdEcho(const char* argv[], int argc) {
 /// reboot
 void cmdReboot(const char*[], int) {
     ESP.reset();
+}
+/// dump state
+void cmdState(const char*[], int) {
+    DynamicJsonBuffer buffer;
+    settings.toJson(buffer).printTo(Serial);
+    Serial.println();
 }
 /// output our version
 void cmdVersion(const char*[], int) {
@@ -158,6 +165,7 @@ void setup() {
         { "echo",    &cmdEcho },
         { "help",    &Console::cmdHelp },
         { "reboot",  &cmdReboot },
+        { "state",   &cmdState },
         { "wifi",    &cmdWifi },
         { "version", &cmdVersion },
     };
