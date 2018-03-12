@@ -121,7 +121,7 @@ protected:
     /////////////////////////////////////////////////////////////////////////
     /// output JSON
     void toJson_(JsonObject& json, int /*flags*/) override {
-        json.set(name().c_str(), nullptr);
+        json.set(name().c_str(), (const char*)nullptr);
     }
 };
 
