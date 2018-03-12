@@ -27,7 +27,7 @@ public:
     void tick();
 
 private:
-    static Button*  instance_;
+    static Button*  instance_;          ///< singleton instance
 
     OneButton       button_;
     SmartPlug&      smartPlug_;
