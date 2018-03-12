@@ -13,24 +13,24 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 /////////////////////////////////////////////////////////////////////////////
 void WifiManager::begin() {
     // hostname includes chip id
-    const String chipId(ESP.getChipId(), HEX);
+    const String chipId{ESP.getChipId(), HEX};
     hostname_ = "ESP8266-" + chipId;
     apPassword_ = chipId + chipId;
 
-    // begin wifi
+    // begin wifi (restores from SDKs stored settings)
     WiFi.begin();
 
-    // update our cached internal state based on esp8266 restored persisted state
-    if (WIFI_STA == WiFi.getMode()) {
-        mode_ = WIFI_STA;
-    } else {
-        setModeAP();
+    //
+    const auto mode = WiFi.getMode();
+    if (WIFI_STA == mode && 0 == WiFi.SSID().length()) {
+        setModeAP(); // switch over to AP mode if there's no stored SSID available
     }
 }
 
 /////////////////////////////////////////////////////////////////////////////
 void WifiManager::tick() {
-    if (WIFI_STA == mode_) {
+    // periodically check connection status
+    if (WIFI_STA == mode()) {
         const bool connected = (WL_CONNECTED == WiFi.status());
         if (connected != staConnected_) {
             staConnected_ = connected;
@@ -38,16 +38,35 @@ void WifiManager::tick() {
             if (connected) {
                 const auto ip = WiFi.localIP();
                 if (onConnected_) onConnected_(ip);
-                Serial.print("WiFi Connected (IP: ");
-                Serial.print(ip);
-                Serial.println(')');
+                printf("WiFi Connected (IP: %s)\r\n", ip.toString().c_str());
             } else {
-                Serial.println("WiFi Disconnected");
+                printf("WiFi Disconnected\r\n");
             }
         }
     }
 
     updateLed_();
+}
+
+/////////////////////////////////////////////////////////////////////////////
+/// our IP address
+IPAddress WifiManager::ipAddress() const {
+    switch (mode()) {
+    case WIFI_AP:
+    case WIFI_AP_STA:
+        return WiFi.softAPIP();
+    case WIFI_STA:
+        return WiFi.localIP();
+    case WIFI_OFF:
+    default:
+        return IPAddress{};
+    }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+/// current WiFi mode
+int WifiManager::mode() const {
+    return WiFi.getMode();
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -62,6 +81,8 @@ void WifiManager::updateLed_() {
     const auto ledState = [this]{
         // solid blue in AP mode
         if (WIFI_AP == mode()) return HIGH;
+        // off when off
+        if (WIFI_OFF == mode()) return LOW;
 
         // leave off when we're happily connected
         if (isConnected()) return LOW;
@@ -75,35 +96,53 @@ void WifiManager::updateLed_() {
 }
 
 /////////////////////////////////////////////////////////////////////////////
-/// set AP mode
-void WifiManager::setModeAP()  {
-    mode_ = WIFI_AP;
+/// disconnect wifi
+void WifiManager::disconnect_() {
+    if (staConnected_) printf("WiFi Disconnected\r\n");
     staConnected_ = false;
-
-    Serial.print("AP '");
-    Serial.print(hostname_);
-    Serial.print("' ");
 
     WiFi.disconnect();
     WiFi.waitForConnectResult();
+}
+
+/////////////////////////////////////////////////////////////////////////////
+/// turn off wifi
+void WifiManager::setModeOff() {
+    disconnect_();
+
+    WiFi.mode(WIFI_OFF);
+    WiFi.waitForConnectResult();
+}
+
+/////////////////////////////////////////////////////////////////////////////
+/// set AP mode
+void WifiManager::setModeAP()  {
+    disconnect_();
 
     WiFi.mode(WIFI_AP);
+    WiFi.waitForConnectResult();
+
     if (WiFi.softAP(hostname_.c_str(), apPassword_.c_str())) {
         const auto ip = WiFi.softAPIP();
-        Serial.print(" (IP: ");
-        Serial.print(ip);
-        Serial.print(')');
+        printf("AP '%s' (IP: %s)\r\n", hostname_.c_str(), ip.toString().c_str());
+    } else {
+        printf("Failed to set AP mode\r\n");
     }
-    Serial.println();
 }
 
 /////////////////////////////////////////////////////////////////////////////
 /// set STA
 void WifiManager::setModeSTA() {
-    mode_ = WIFI_STA;
-    staConnected_ = false;
+    setModeSTA(WiFi.SSID().c_str(), WiFi.psk().c_str());
+}
+/// set STA
+void WifiManager::setModeSTA(const char* ssid, const char* pass) {
+    disconnect_();
 
-    WiFi.begin(ssid.c_str(), password.c_str());
+    WiFi.mode(WIFI_STA);
+    WiFi.waitForConnectResult();
+
+    WiFi.begin(ssid, pass);
 }
 
 #endif // UNIT_TEST

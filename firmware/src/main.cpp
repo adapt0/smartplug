@@ -66,6 +66,53 @@ void cmdVersion(const char*[], int) {
     printf("MAC: %s\r\n", WiFi.macAddress().c_str());
     printf("Hostname: %s\r\n", wifiManager.hostname().c_str());
 }
+/// wifi control
+void cmdWifi(const char* argv[], int argc) {
+    if (argc <= 0) {
+        switch (wifiManager.mode()) {
+        case WIFI_OFF:
+            printf("WIFI: OFF\r\n");
+            break;
+        case WIFI_STA:
+            printf("WIFI: STA\r\n");
+            printf("Connected: %d\r\n", wifiManager.isConnected() ? 1 : 0);
+            printf("IP: %s\r\n", wifiManager.ipAddress().toString().c_str());
+            break;
+        case WIFI_AP:
+            printf("WIFI: AP\r\n");
+            printf("IP: %s\r\n", wifiManager.ipAddress().toString().c_str());
+            break;
+        case WIFI_AP_STA:
+            printf("WIFI: AP_STA\r\n");
+            printf("IP: %s\r\n", wifiManager.ipAddress().toString().c_str());
+            break;
+        default:
+            printf("WIFI: Unknown\r\n");
+            break;
+        }
+        return;
+    }
+
+    // turn off wifi
+    if (1 == argc && 0 == strcasecmp(argv[0], "off")) {
+        wifiManager.setModeOff();
+        return;
+    }
+    // AP mode
+    if (1 == argc && 0 == strcasecmp(argv[0], "ap")) {
+        wifiManager.setModeAP();
+        return;
+    }
+    // STA mode
+    if (3 == argc && 0 == strcasecmp(argv[0], "sta")) {
+        wifiManager.setModeSTA(argv[1], argv[2]);
+        return;
+    }
+
+    printf("wifi OFF\r\n");
+    printf("wifi AP\r\n");
+    printf("wifi STA (SSID) (PASS)\r\n");
+}
 
 /////////////////////////////////////////////////////////////////////////////
 /// initialization
@@ -111,6 +158,7 @@ void setup() {
         { "echo",    &cmdEcho },
         { "help",    &Console::cmdHelp },
         { "reboot",  &cmdReboot },
+        { "wifi",    &cmdWifi },
         { "version", &cmdVersion },
     };
     console.begin(commands, sizeof(commands)/sizeof(commands[0]));

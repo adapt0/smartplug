@@ -32,11 +32,13 @@ public:
     /// connected?
     bool isConnected() const { return staConnected_; }
 
-    /// current WiFi mode
-    int mode() const { return mode_; }
+    IPAddress ipAddress() const;
+    int mode() const;
 
+    void setModeOff();
     void setModeAP();
     void setModeSTA();
+    void setModeSTA(const char* ssid, const char* pass);
 
     /// attach connected callback
     void attachConnected(OnConnected onConnected) {
@@ -44,13 +46,13 @@ public:
     }
 
 private:
+    void disconnect_();
     void updateLed_();
 
     String      hostname_;              ///< our hostname
     String      apPassword_;            ///< our AP's password
     OnConnected onConnected_;           ///< on connected callback
     int         pinLed_ = -1;           ///< connectivity LED
-    int         mode_ = WIFI_OFF;       ///< WiFi mode
     bool        staConnected_ = false;  ///< is STA connected?
 };
 
