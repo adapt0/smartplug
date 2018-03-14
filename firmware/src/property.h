@@ -67,8 +67,8 @@ private:
     bool            dirty_ = false;             ///< property has been modified
 
     PropertyNode*   parent_ = nullptr;          ///< our parent property
-    Property*       sibling_prev_ = nullptr;    ///< previous sibling
-    Property*       sibling_next_ = nullptr;    ///< next sibling
+    Property*       siblingPrev_ = nullptr;     ///< previous sibling
+    Property*       siblingNext_ = nullptr;     ///< next sibling
 };
 
 
@@ -100,8 +100,8 @@ private:
     void toJson_(JsonObject& json, int flags) override;
     void jsonChildren_(JsonObject& json, int flags);
 
-    Property*   child_first_ = nullptr;     ///< first child property
-    Property*   child_last_ = nullptr;      ///< last child property
+    Property*   childFirst_ = nullptr;      ///< first child property
+    Property*   childLast_ = nullptr;       ///< last child property
 };
 
 

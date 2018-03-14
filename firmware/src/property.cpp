@@ -46,16 +46,16 @@ void Property::markDirty() {
 /// add child node
 void PropertyNode::addChild(Property& child) {
     assert(!child.parent_ && "addChild but already associated with a parent");
-    assert(!child.sibling_prev_ && !child.sibling_next_);
+    assert(!child.siblingPrev_ && !child.siblingNext_);
 
     child.parent_ = this;
 
-    child.sibling_next_ = nullptr;
-    child.sibling_prev_ = child_last_;
-    if (child_last_) child_last_->sibling_next_ = &child;
-    child_last_ = &child;
+    child.siblingNext_ = nullptr;
+    child.siblingPrev_ = childLast_;
+    if (childLast_) childLast_->siblingNext_ = &child;
+    childLast_ = &child;
 
-    if (!child_first_) child_first_ = &child;
+    if (!childFirst_) childFirst_ = &child;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -63,10 +63,10 @@ void PropertyNode::addChild(Property& child) {
 void PropertyNode::removeChild(Property& child) {
     assert((this == child.parent_) && "removeChild but properties parent differs during removal");
 
-    if (child.sibling_prev_) child.sibling_prev_->sibling_next_ = child.sibling_next_;
-    if (child.sibling_next_) child.sibling_next_->sibling_prev_ = child.sibling_prev_;
-    if (&child == child_first_) child_first_ = child.sibling_next_;
-    if (&child == child_last_) child_last_ = child.sibling_prev_;
+    if (child.siblingPrev_) child.siblingPrev_->siblingNext_ = child.siblingNext_;
+    if (child.siblingNext_) child.siblingNext_->siblingPrev_ = child.siblingPrev_;
+    if (&child == childFirst_) childFirst_ = child.siblingNext_;
+    if (&child == childLast_)  childLast_  = child.siblingPrev_;
 
     child.parent_ = nullptr;
 }
@@ -86,7 +86,7 @@ void PropertyNode::toJson_(JsonObject& json, int flags) {
 }
 /// fill JSON with children
 void PropertyNode::jsonChildren_(JsonObject& json, int flags) {
-    for (auto child = child_first_; child; child = child->sibling_next_) {
+    for (auto child = childFirst_; child; child = child->siblingNext_) {
         // filter + clear dirty
         if (flags & JSON_DIRTY) {
             if (!child->dirty_) continue;

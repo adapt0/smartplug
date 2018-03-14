@@ -10,6 +10,14 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 #include <doctest/doctest.h>
 
 #include <cstdio>
+#include <sys/time.h>
+
+/////////////////////////////////////////////////////////////////////////////
+extern "C" unsigned long millis() {
+    timeval tv{ };
+    gettimeofday(&tv, nullptr);
+    return tv.tv_sec * 1000 + tv.tv_usec / 1000;
+}
 
 /////////////////////////////////////////////////////////////////////////////
 extern "C" char* utoa(unsigned value, char* result, int base) {

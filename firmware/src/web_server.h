@@ -9,6 +9,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 #define INCLUDED__WEB_SERVER
 
 //- includes
+#include <ArduinoJson.h>
 #include <ESPAsyncWebServer.h>
 
 //- forwards
@@ -25,9 +26,11 @@ public:
 
 private:
     void onWebSocketEvent_(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType type, void* arg, uint8_t* data, size_t len);
+    void onJsonRpc_(AsyncWebSocketClient* client, char* data);
 
-    AsyncWebServer  server_{80};    ///< async web server
-    Settings&       settings_;      ///< settings access
+    AsyncWebServer  server_{80};        ///< async web server
+    AsyncWebSocket  serverWebSocket_;   ///< async web socket
+    Settings&       settings_;          ///< settings access
 };
 
 #endif // INCLUDED__WEB_SERVER
