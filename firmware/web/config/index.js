@@ -4,13 +4,25 @@
 
 const path = require('path')
 
+const proxyTable = { }
+if (process.env.PROXY) {
+  // proxy all requests starting with /api to jsonplaceholder
+  const target = `http://${process.env.PROXY}`
+  console.log(`Proxy target ${target}`)
+  proxyTable['/api'] = {
+    target,
+    changeOrigin: true,
+    ws: true
+  }
+}
+
 module.exports = {
   dev: {
 
     // Paths
     assetsSubDirectory: 'static',
     assetsPublicPath: '/',
-    proxyTable: {},
+    proxyTable,
 
     // Various Dev Server settings
     host: 'localhost', // can be overwritten by process.env.HOST
