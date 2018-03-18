@@ -16,6 +16,11 @@ const store = new Vuex.Store({
     sys: { },
     test: { }
   },
+  getters: {
+    rpcConnected () {
+      return Vue.rpc.connected
+    }
+  },
   mutations: {
     stateNew (state, results) {
       Object.assign(state, results)
@@ -33,10 +38,13 @@ const store = new Vuex.Store({
 
 // WebSocket RPC
 Vue.use(Rpc, '/api/v1')
-Vue.rpc.$on('connect', (state) => {
+Vue.rpc.on('connect', (state) => {
   store.commit('stateNew', state)
 })
-Vue.rpc.$on('update', (state) => {
+Vue.rpc.on('disconnect', () => {
+  // console.log(store, store.rpcConnected, Vue.rpc.connected)
+})
+Vue.rpc.on('update', (state) => {
   store.commit('stateUpdate', state)
 })
 

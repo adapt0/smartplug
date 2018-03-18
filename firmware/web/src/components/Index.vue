@@ -1,6 +1,7 @@
 <template>
   <div class="index">
     <h2>{{ $store.state.test.int }}</h2>
+    <div>Connected: {{ $store.getters.rpcConnected }}</div>
     <button v-on:click="$store.dispatch('test')">Add 1</button>
   </div>
 </template>
