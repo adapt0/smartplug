@@ -1,5 +1,7 @@
 <template>
   <div class="index">
+    <h3>Dashboard</h3>
+
     <h2>{{ $store.state.test.int }}</h2>
     <div>Connected: {{ $store.getters.rpcConnected }}</div>
     <button v-on:click="$store.dispatch('test')">Add 1</button>
@@ -8,10 +10,9 @@
 
 <script>
 export default {
-  name: 'Index'
+  name: 'Home'
 }
 </script>
 
-<!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
 </style>

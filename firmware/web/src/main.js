@@ -3,11 +3,19 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
 import App from './App'
+import BootstrapVue from 'bootstrap-vue'
+import Icon from 'vue-awesome/components/Icon'
 import router from './router'
 import Rpc from './plugins/rpc'
 import { mergeDeep } from './helpers/mergeDeep.js'
 
 Vue.config.productionTip = false
+
+// bootstrap
+Vue.use(BootstrapVue)
+
+// vue-awesome icon component
+Vue.component('icon', Icon)
 
 // Vuex state management
 Vue.use(Vuex)
