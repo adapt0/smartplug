@@ -17,12 +17,23 @@ Vue.use(BootstrapVue)
 // vue-awesome icon component
 Vue.component('icon', Icon)
 
+const now = new Date()
+const dataLength = 60
+
 // Vuex state management
 Vue.use(Vuex)
 const store = new Vuex.Store({
   state: {
-    sys: { },
-    test: { }
+    wattage: Array(dataLength).fill(now.getTime()).map((v, i) => {
+      return [
+        v - (dataLength - i) * 1000,
+        Math.random(100)
+      ]
+    }),
+    data: {
+      sys: { },
+      test: { }
+    }
   },
   getters: {
     rpcConnected () {
@@ -31,10 +42,16 @@ const store = new Vuex.Store({
   },
   mutations: {
     stateNew (state, results) {
-      Object.assign(state, results)
+      Object.assign(state.data, results)
     },
     stateUpdate (state, results) {
-      mergeDeep(state, results)
+      mergeDeep(state.data, results)
+    },
+    wattage (state, value) {
+      state.wattage = [
+        ...state.wattage.slice(1),
+        [ new Date(), Math.random() * 100 ]
+      ]
     }
   },
   actions: {
@@ -62,5 +79,13 @@ new Vue({
   router,
   store,
   components: { App },
-  template: '<App/>'
+  template: '<App/>',
+  mounted () {
+    this.timerId_ = setInterval(() => {
+      store.commit('wattage', Math.random() * 100)
+    }, 1000)
+  },
+  beforeDestroy () {
+    if (this.timerId_) clearInterval(this.timerId_)
+  }
 })

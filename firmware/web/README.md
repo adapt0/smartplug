@@ -38,3 +38,6 @@ For a detailed explanation on how things work, check out the [guide](http://vuej
   https://vuejs.org/
 * Vuex - Vuex is a state management pattern + library for Vue.js applications
   https://vuex.vuejs.org
+* vue-chartjs - Easy and beautiful charts with Chart.js and Vue.js
+  http://vue-chartjs.org
+  http://www.chartjs.org/
