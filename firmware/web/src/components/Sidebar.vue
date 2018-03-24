@@ -9,7 +9,7 @@
       </b-nav>
     </div>
     <div class="mt-auto text-center p-4">
-      <bootstrap-toggle v-model="relay" :disabled="!$store.getters.rpcConnected"></bootstrap-toggle>
+      <bootstrap-toggle v-model="relay" :disabled="!$store.state.Rpc.connected"></bootstrap-toggle>
     </div>
   </div>
 </template>
@@ -27,13 +27,13 @@ export default {
   computed: {
     relay: {
       get () {
-        return Boolean(this.$store.state.data.relay)
+        return Boolean(this.$store.state.Rpc.data.relay)
       },
       set (state) {
-        const relay = this.$store.state.data.relay
-        if (this.$store.getters.rpcConnected && (relay !== null) && (typeof relay !== 'undefined')) {
-          console.log('set relay', state, this.$store.state.data.relay)
-          this.$store.dispatch('relay', state)
+        const relay = this.$store.state.Rpc.data.relay
+        if (this.$store.state.Rpc.connected && (relay !== null) && (typeof relay !== 'undefined')) {
+          console.log('set relay', state, this.$store.state.Rpc.data.relay)
+          this.$store.dispatch('Rpc/relay', state)
         }
       }
     }

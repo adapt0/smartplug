@@ -1,10 +1,10 @@
 <template>
-  <div id='app'>
-    <connection-alert :value='!$store.getters.rpcConnected'>
+  <div id="app">
+    <connection-alert :value="!$store.state.Rpc.connected">
     </connection-alert>
-    <div class='body' v-bind:class='{ offline: !$store.getters.rpcConnected }' >
+    <div class="body" v-bind:class="{ offline: !$store.state.Rpc.connected }" >
       <Sidebar />
-      <div class='content'>
+      <div class="content">
         <router-view/>
       </div>
     </div>
