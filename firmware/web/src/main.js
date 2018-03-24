@@ -1,13 +1,18 @@
+/** @file
+Application entry point
+
+\copyright Copyright (c) 2018 Chris Byrne. All rights reserved.
+Licensed under the MIT License. Refer to LICENSE file in the project root. */
+
 // The Vue build version to load with the `import` command
 // (runtime-only or standalone) has been set in webpack.base.conf with an alias.
 import Vue from 'vue'
-import Vuex from 'vuex'
-import App from './App'
+import App from '@/components/App'
 import BootstrapVue from 'bootstrap-vue'
 import Icon from 'vue-awesome/components/Icon'
-import router from './router'
-import Rpc from './plugins/rpc'
-import { mergeDeep } from './helpers/mergeDeep.js'
+import router from '@/router'
+import Rpc from '@/plugins/rpc'
+import store from '@/store'
 
 Vue.config.productionTip = false
 
@@ -16,54 +21,6 @@ Vue.use(BootstrapVue)
 
 // vue-awesome icon component
 Vue.component('icon', Icon)
-
-const now = new Date()
-const dataLength = 60
-
-// Vuex state management
-Vue.use(Vuex)
-const store = new Vuex.Store({
-  state: {
-    wattage: Array(dataLength).fill(now.getTime()).map((v, i) => {
-      return [
-        v - (dataLength - i) * 1000,
-        null
-      ]
-    }),
-    data: {
-      relay: null,
-      sys: { },
-      test: { }
-    }
-  },
-  getters: {
-    rpcConnected () {
-      return Boolean(Vue.rpc.connected)
-    }
-  },
-  mutations: {
-    stateNew (state, results) {
-      Object.assign(state.data, results)
-    },
-    stateUpdate (state, results) {
-      mergeDeep(state.data, results)
-    },
-    wattage (state, power) {
-      state.wattage = [
-        ...state.wattage.slice(1),
-        [ new Date(), power ]
-      ]
-    }
-  },
-  actions: {
-    relay (context, state) {
-      return Vue.rpc.request('relay', state)
-    },
-    test (/* context */) {
-      return Vue.rpc.request('test')
-    }
-  }
-})
 
 // WebSocket RPC
 Vue.use(Rpc, '/api/v1')

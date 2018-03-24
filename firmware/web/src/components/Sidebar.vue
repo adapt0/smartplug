@@ -15,7 +15,7 @@
 </template>
 
 <script>
-import BootstrapToggle from './BootstrapToggle'
+import BootstrapToggle from '@/components/BootstrapToggle'
 import 'vue-awesome/icons/cog'
 import 'vue-awesome/icons/home'
 import 'vue-awesome/icons/info-circle'

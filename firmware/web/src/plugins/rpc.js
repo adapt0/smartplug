@@ -134,7 +134,7 @@ export default {
 
       eventHub_: new Vue({
         data: {
-          connected: false
+          connected: true // initially assume we have a connection
         }
       }),
       pending_: { },

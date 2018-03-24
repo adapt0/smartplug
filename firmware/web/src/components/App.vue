@@ -14,8 +14,8 @@
 <script>
 import 'bootstrap/dist/css/bootstrap.css'
 import 'bootstrap-vue/dist/bootstrap-vue.css'
-import ConnectionAlert from './components/ConnectionAlert'
-import Sidebar from './components/Sidebar'
+import ConnectionAlert from '@/components/ConnectionAlert'
+import Sidebar from '@/components/Sidebar'
 
 export default {
   name: 'App',

@@ -30,7 +30,7 @@
 </template>
 
 <script>
-import Chart from './chart'
+import Chart from '@/components/chart'
 
 export default {
   name: 'Home',
