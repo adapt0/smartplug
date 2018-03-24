@@ -1,11 +1,11 @@
 <template>
-  <div id="app">
-    <div class="body">
-      <Sidebar></Sidebar>
-      <div class="content">
-        <div class="blah">
-          <router-view/>
-        </div>
+  <div id='app'>
+    <connection-alert :value='!$store.getters.rpcConnected'>
+    </connection-alert>
+    <div class='body' v-bind:class='{ offline: !$store.getters.rpcConnected }' >
+      <Sidebar />
+      <div class='content'>
+        <router-view/>
       </div>
     </div>
   </div>
@@ -14,11 +14,13 @@
 <script>
 import 'bootstrap/dist/css/bootstrap.css'
 import 'bootstrap-vue/dist/bootstrap-vue.css'
-import Sidebar from './components/Sidebar.vue'
+import ConnectionAlert from './components/ConnectionAlert'
+import Sidebar from './components/Sidebar'
 
 export default {
   name: 'App',
   components: {
+    ConnectionAlert,
     Sidebar
   }
 }
@@ -45,5 +47,9 @@ html, body, #app {
   flex: 1;
   min-width: 0;
   padding: 1em;
+}
+#app > .body.offline {
+  opacity: 0.4;
+  transition: opacity 2s ease 1s;
 }
 </style>
