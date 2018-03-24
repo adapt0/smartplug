@@ -1,3 +1,7 @@
+<!--
+\copyright Copyright (c) 2018 Chris Byrne. All rights reserved.
+Licensed under the MIT License. Refer to LICENSE file in the project root.
+-->
 <template>
   <div class="d-flex flex-column sidebar">
     <div>
@@ -15,7 +19,7 @@
 </template>
 
 <script>
-import BootstrapToggle from '@/components/BootstrapToggle'
+import BootstrapToggle from '@/components/shared/BootstrapToggle'
 import 'vue-awesome/icons/cog'
 import 'vue-awesome/icons/home'
 import 'vue-awesome/icons/info-circle'

@@ -1,9 +1,13 @@
+<!--
+\copyright Copyright (c) 2018 Chris Byrne. All rights reserved.
+Licensed under the MIT License. Refer to LICENSE file in the project root.
+-->
 <template>
   <div id="app">
     <connection-alert :value="!$store.state.Rpc.connected">
     </connection-alert>
     <div class="body" v-bind:class="{ offline: !$store.state.Rpc.connected }" >
-      <Sidebar />
+      <AppSidebar />
       <div class="content">
         <router-view/>
       </div>
@@ -14,14 +18,14 @@
 <script>
 import 'bootstrap/dist/css/bootstrap.css'
 import 'bootstrap-vue/dist/bootstrap-vue.css'
-import ConnectionAlert from '@/components/ConnectionAlert'
-import Sidebar from '@/components/Sidebar'
+import AppSidebar from '@/components/AppSidebar'
+import ConnectionAlert from '@/components/shared/ConnectionAlert'
 
 export default {
   name: 'App',
   components: {
-    ConnectionAlert,
-    Sidebar
+    AppSidebar,
+    ConnectionAlert
   }
 }
 </script>

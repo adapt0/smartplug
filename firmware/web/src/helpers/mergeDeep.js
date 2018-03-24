@@ -1,4 +1,9 @@
-// https://stackoverflow.com/questions/27936772/how-to-deep-merge-instead-of-shallow-merge
+/** @file
+Object merging
+https://stackoverflow.com/questions/27936772/how-to-deep-merge-instead-of-shallow-merge
+
+\copyright Copyright (c) 2018 Chris Byrne. All rights reserved.
+Licensed under the MIT License. Refer to LICENSE file in the project root. */
 
 /**
  * Simple object check.

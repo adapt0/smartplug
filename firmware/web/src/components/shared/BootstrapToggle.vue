@@ -1,3 +1,11 @@
+<!--
+Bootstrap Toggle - http://www.bootstraptoggle.com
+Copyright 2014 Min Hur, The New York Times Company
+Licensed under MIT
+
+\copyright Copyright (c) 2018 Chris Byrne. All rights reserved.
+Licensed under the MIT License. Refer to LICENSE file in the project root.
+-->
 <template>
   <div class="toggle btn btn-default" v-bind:class="{ off: !value, disabled }" style="width: 70px; height: 38px;" v-on:click="toggle">
     <input type="checkbox">

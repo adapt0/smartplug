@@ -1,3 +1,7 @@
+<!--
+\copyright Copyright (c) 2018 Chris Byrne. All rights reserved.
+Licensed under the MIT License. Refer to LICENSE file in the project root.
+-->
 <template>
   <div class="connection alert d-flex justify-content-between" v-bind:class="[ value ? 'alert-danger' : 'alert-success', { active: value }]" role="alert">
     <template v-if="value">

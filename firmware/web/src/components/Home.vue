@@ -1,3 +1,7 @@
+<!--
+\copyright Copyright (c) 2018 Chris Byrne. All rights reserved.
+Licensed under the MIT License. Refer to LICENSE file in the project root.
+-->
 <template>
   <div class="index">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
@@ -30,7 +34,7 @@
 </template>
 
 <script>
-import Chart from '@/components/chart'
+import Chart from '@/components/shared/chart'
 
 export default {
   name: 'Home',

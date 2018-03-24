@@ -1,3 +1,7 @@
+<!--
+\copyright Copyright (c) 2018 Chris Byrne. All rights reserved.
+Licensed under the MIT License. Refer to LICENSE file in the project root.
+-->
 <script>
 import { Line } from 'vue-chartjs'
 
