@@ -19,7 +19,7 @@ export default {
         this.ws_.onmessage = (m) => this.onMessage_(JSON.parse(m.data))
       },
 
-      request (method) {
+      request (method, params) {
         if (!this.connected_) throw new Error('Not connected')
 
         return new Promise((resolve, reject) => {
@@ -27,7 +27,8 @@ export default {
           this.ws_.send(JSON.stringify({
             jsonrpc: '2.0',
             id,
-            method
+            method,
+            params
           }))
           this.pending_[id] = { resolve, reject }
         })

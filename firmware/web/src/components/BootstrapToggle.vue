@@ -1,10 +1,10 @@
 <template>
-  <div class='toggle btn btn-default' v-bind:class='{ off: !value, disabled }' style='width: 70px; height: 38px;' v-on:click='toggle'>
-    <input type='checkbox' checked=''>
-    <div class='toggle-group'>
-      <label class='btn btn-primary toggle-on'>{{onValue}}</label>
-      <label class='btn btn-secondary active toggle-off'>{{offValue}}</label>
-      <span class='toggle-handle btn btn-light'></span>
+  <div class="toggle btn btn-default" v-bind:class="{ off: !value, disabled }" style="width: 70px; height: 38px;" v-on:click="toggle">
+    <input type="checkbox">
+    <div class="toggle-group">
+      <label class="btn btn-primary toggle-on">{{onValue}}</label>
+      <label class="btn btn-secondary active toggle-off">{{offValue}}</label>
+      <span class="toggle-handle btn btn-light"></span>
     </div>
   </div>
 </template>

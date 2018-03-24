@@ -1,23 +1,47 @@
 <template>
-  <b-nav class="sidebar" vertical>
-    <b-nav-text><router-link to="/"><h5>SmartPlug</h5></router-link></b-nav-text>
-    <b-nav-item to="home"><icon name="home"/>Home</b-nav-item>
-    <b-nav-item to="settings"><icon name="cog"/>Settings</b-nav-item>
-    <b-nav-item to="about"><icon name="info-circle"/>About</b-nav-item>
-  </b-nav>
+  <div class="d-flex flex-column sidebar">
+    <div>
+      <b-nav vertical>
+        <b-nav-text><router-link to="/"><h5>SmartPlug</h5></router-link></b-nav-text>
+        <b-nav-item to="home"><icon name="home"/>Home</b-nav-item>
+        <b-nav-item to="settings"><icon name="cog"/>Settings</b-nav-item>
+        <b-nav-item to="about"><icon name="info-circle"/>About</b-nav-item>
+      </b-nav>
+    </div>
+    <div class="mt-auto text-center p-4">
+      <bootstrap-toggle v-model="relay" :disabled="!$store.getters.rpcConnected"></bootstrap-toggle>
+    </div>
+  </div>
 </template>
 
 <script>
+import BootstrapToggle from './BootstrapToggle'
 import 'vue-awesome/icons/cog'
 import 'vue-awesome/icons/home'
 import 'vue-awesome/icons/info-circle'
 
 export default {
-  name: 'Sidebar'
+  components: {
+    BootstrapToggle
+  },
+  computed: {
+    relay: {
+      get () {
+        return Boolean(this.$store.state.data.relay)
+      },
+      set (state) {
+        const relay = this.$store.state.data.relay
+        if (this.$store.getters.rpcConnected && (relay !== null) && (typeof relay !== 'undefined')) {
+          console.log('set relay', state, this.$store.state.data.relay)
+          this.$store.dispatch('relay', state)
+        }
+      }
+    }
+  }
 }
 </script>
 
-<style>
+<style scoped>
 .sidebar {
   box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
 }

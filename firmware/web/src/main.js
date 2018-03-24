@@ -27,17 +27,18 @@ const store = new Vuex.Store({
     wattage: Array(dataLength).fill(now.getTime()).map((v, i) => {
       return [
         v - (dataLength - i) * 1000,
-        Math.random(100)
+        null
       ]
     }),
     data: {
+      relay: null,
       sys: { },
       test: { }
     }
   },
   getters: {
     rpcConnected () {
-      return Vue.rpc.connected
+      return Boolean(Vue.rpc.connected)
     }
   },
   mutations: {
@@ -47,14 +48,17 @@ const store = new Vuex.Store({
     stateUpdate (state, results) {
       mergeDeep(state.data, results)
     },
-    wattage (state, value) {
+    wattage (state, power) {
       state.wattage = [
         ...state.wattage.slice(1),
-        [ new Date(), Math.random() * 100 ]
+        [ new Date(), power ]
       ]
     }
   },
   actions: {
+    relay (context, state) {
+      return Vue.rpc.request('relay', state)
+    },
     test (/* context */) {
       return Vue.rpc.request('test')
     }
@@ -82,7 +86,12 @@ new Vue({
   template: '<App/>',
   mounted () {
     this.timerId_ = setInterval(() => {
-      store.commit('wattage', Math.random() * 100)
+      if (Vue.rpc.connected) {
+        const power = store.state.data.power
+        if (typeof power !== 'undefined') {
+          store.commit('wattage', power)
+        }
+      }
     }, 1000)
   },
   beforeDestroy () {
