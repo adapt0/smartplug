@@ -13,9 +13,12 @@ extern "C" unsigned long millis();
 
 /////////////////////////////////////////////////////////////////////////////
 Settings::Settings()
-: propSys_{ &propRoot_, "sys" }
+: propRelay_{ &propRoot_, "relay" }
+, propSys_{ &propRoot_, "sys" }
 , propTest_{ &propRoot_, "test" }
 , propTestInt_{ &propTest_, "int", 42 }
+, propPower_{ &propRoot_, "power" }
+, propVoltage_{ &propRoot_, "voltage" }
 { }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -38,10 +41,25 @@ void Settings::tick() {
 }
 
 /////////////////////////////////////////////////////////////////////////////
+/// update measurements
+void Settings::updateMeasurements(double watts, double volts) {
+    propPower_.setValue(watts);
+    propVoltage_.setValue(volts);
+}
+
+/////////////////////////////////////////////////////////////////////////////
 /// received command
-Settings::CommandResult Settings::onCommand(const char* method, const JsonObject& params, JsonBuffer& buffer) {
+Settings::CommandResult Settings::onCommand(const char* method, const JsonVariant& params, JsonBuffer& buffer) {
     if (0 == strcmp(method, "ping")) {
         return CommandResult(JsonRpcError::NO_ERROR, "pong");
+
+    } else if (0 == strcmp(method, "relay")) {
+        const auto newValue = params.as<bool>();
+        if (propRelay_.value() != newValue) {
+            propRelay_.setValue(newValue);
+            if (onRelay_) onRelay_(newValue);
+        }
+        return CommandResult(JsonRpcError::NO_ERROR, true);
 
     } else if (0 == strcmp(method, "state")) {
         return CommandResult(JsonRpcError::NO_ERROR, this->toJson(buffer));

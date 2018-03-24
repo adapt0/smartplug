@@ -20,9 +20,9 @@ class PropertyNode;
 template <typename T>
 class PropertyValueT;
 
-using PropertyBool = PropertyValueT<bool>;  ///< holds a boolean
-using PropertyInt  = PropertyValueT<int>;   ///< holds an integer
-
+using PropertyBool  = PropertyValueT<bool>;     ///< holds a boolean
+using PropertyFloat = PropertyValueT<float>;    ///< holds a float
+using PropertyInt   = PropertyValueT<int>;      ///< holds an integer
 
 /////////////////////////////////////////////////////////////////////////////
 /// property encapsulation

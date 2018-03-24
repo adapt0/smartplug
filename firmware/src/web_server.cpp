@@ -149,7 +149,7 @@ void WebServer::onJsonRpc_(AsyncWebSocketClient* client, char* data) {
     const char* method = request["method"];
     if (!method) return;
     // A Structured value that holds the parameter values to be used during the invocation of the method. This member MAY be omitted
-    const JsonObject& params = request["params"];
+    const JsonVariant& params = request["params"];
     // An identifier established by the Client that MUST contain a String, Number, or NULL value if included
     const auto id = request["id"];
 

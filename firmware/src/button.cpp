@@ -42,7 +42,7 @@ void Button::begin() {
         );
     });
     // button.attachDoubleClick([] {
-    //     Serial.println("button double click");
+    //     printf("button double click");
     // });
     static bool longPressed = false;
     static int longMillis = -1;

@@ -9,6 +9,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 
 //- includes
 #include "smartplug.h"
+#include "settings.h"
 #include <Arduino.h>
 
 namespace {
@@ -19,7 +20,9 @@ namespace {
 SmartPlug* SmartPlug::instance_ = nullptr;
 
 /////////////////////////////////////////////////////////////////////////////
-SmartPlug::SmartPlug() {
+SmartPlug::SmartPlug(Settings& settings)
+: settings_(settings)
+{
     assert(!instance_);
     instance_ = this;
 }
@@ -43,11 +46,30 @@ void SmartPlug::begin() {
 
     pinMode(PIN_RELAY, OUTPUT);
     digitalWrite(PIN_RELAY, LOW);
+
+    settings_.onRelay([this](bool state) {
+        setRelay(state);
+    });
+
+    lastMillis_ = millis();
 }
 
 /////////////////////////////////////////////////////////////////////////////
 void SmartPlug::tick() {
-    
+    const auto now = millis();
+    if ((now - lastMillis_) < 1000) return;
+    lastMillis_ = now;
+
+    if (measDirty_) {
+        measDirty_ = false;
+
+        noInterrupts();
+        const auto watts = measPower_;
+        const auto volts = measVoltage_;
+        interrupts();
+
+        settings_.updateMeasurements(watts, volts);
+    }
 }
 
 void SmartPlug::setRelay(bool state) {
@@ -97,10 +119,7 @@ ICACHE_RAM_ATTR void SmartPlug::onFallingInterrupt_() {
         const auto vin = v2 / V2_RDIV;
         instance_->measVoltage_ = vin;
 
-        // Serial.print("CF pulseWidth: ");
-        // Serial.print(pulseWidth);
-        // Serial.print(" voltage: ");
-        // Serial.println(vin);
+        // printf("CF pulseWidth: %d, voltage: %f\r\n", pulseWidth, vin);
 
     } else {
         pulsePin = PIN_CF1;
@@ -109,13 +128,9 @@ ICACHE_RAM_ATTR void SmartPlug::onFallingInterrupt_() {
         const auto v1v2 = freq * 128 / FOSC * (VREF * VREF) / 48.0;
         const auto power = v1v2 / V2_RDIV / V1_R;
         instance_->measPower_ = power;
+        instance_->measDirty_ = true;
 
-        // Serial.print("CF1 pulseWidth: ");
-        // Serial.print(pulseWidth);
-        // Serial.print(" v1v2: ");
-        // Serial.print(v1v2);
-        // Serial.print(" power: ");
-        // Serial.println(power);
+        // printf("CF1 pulseWidth: %d, v1v2: %f, power: power\r\n", pulseWidth, v1v2, power);
     }
 
     attachInterrupt(pulsePin, onRisingInterrupt_, RISING);

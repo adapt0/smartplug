@@ -32,6 +32,8 @@ public:
     using CommandResult = std::pair<JsonRpcError, JsonVariant>;
     /// callback for dirty property notifications
     using FuncOnDirtyProperties = std::function<void (const JsonObject&, JsonBuffer& buffer)>;
+    /// callback on relay change
+    using FuncOnRelay = std::function<void (bool)>;
 
     Settings();
 
@@ -49,17 +51,28 @@ public:
     void onDirtyProperties(FuncOnDirtyProperties onDirtyProperties) {
         onDirtyProperties_ = std::move(onDirtyProperties);
     }
+    /// relay changes
+    void onRelay(FuncOnRelay onRelay) {
+        onRelay_ = std::move(onRelay);
+    }
 
-    CommandResult onCommand(const char* method, const JsonObject& params, JsonBuffer& buffer);
+    CommandResult onCommand(const char* method, const JsonVariant& params, JsonBuffer& buffer);
+
+    void updateMeasurements(double watts, double volts);
 
 private:
     PropertyNode            propRoot_;
+    PropertyBool            propRelay_;
     PropertyNode            propSys_;
     PropertyNode            propTest_;
     PropertyInt             propTestInt_;
+    PropertyFloat           propPower_;
+    PropertyFloat           propVoltage_;
 
-    FuncOnDirtyProperties   onDirtyProperties_;   ///< on dirty property notification
-    unsigned long           lastMillis_{0};       ///< last dirty check
+    FuncOnDirtyProperties   onDirtyProperties_; ///< on dirty property notification
+    unsigned long           lastMillis_{0};     ///< last dirty check
+
+    FuncOnRelay             onRelay_;           ///< on relay
 };
 
 #endif // INCLUDED__SETTINGS

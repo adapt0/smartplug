@@ -11,6 +11,9 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 //- includes
 #include <cassert>
 
+//- forwards
+class Settings;
+
 /////////////////////////////////////////////////////////////////////////////
 /// smart plug
 class SmartPlug {
@@ -24,7 +27,7 @@ public:
         PIN_SW1       = 14, ///< button
     };
 
-    SmartPlug();
+    explicit SmartPlug(Settings& settings);
     ~SmartPlug();
 
     void begin();
@@ -41,8 +44,11 @@ private:
 
     volatile double measPower_ = 0;     ///< measured power (W)
     volatile double measVoltage_ = 0;   ///< measured mains voltage (V)
+    volatile bool   measDirty_ = false; ///< valid measurements
 
-    bool    relay_ = false;             ///< current relay state
+    Settings&       settings_;          ///< settings access
+    unsigned long   lastMillis_{0};     ///< last value update
+    bool            relay_ = false;     ///< current relay state
 };
 
 #endif // INCLUDED__SMARTPLUG

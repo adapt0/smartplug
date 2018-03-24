@@ -25,7 +25,7 @@ namespace {
     Console             console{Serial};
     HeartBeat           heartBeat{SmartPlug::PIN_MOD_LED};
     Settings            settings;
-    SmartPlug           smartPlug;
+    SmartPlug           smartPlug{settings};
     UpdateManager       updateManager;
     WebServer           webServer{settings};
     WifiManager         wifiManager{SmartPlug::PIN_BLUE_LED};
@@ -56,6 +56,10 @@ void cmdEcho(const char* argv[], int argc) {
     for (int i = 0; i < argc; ++i) {
         printf("%d: %s\r\n", i, argv[i]);
     }
+}
+/// free memory
+void cmdFree(const char*[], int) {
+    
 }
 /// reboot
 void cmdReboot(const char*[], int) {
@@ -163,6 +167,7 @@ void setup() {
     static Console::Command commands[] = {
         { "dir",     &cmdDir },
         { "echo",    &cmdEcho },
+        { "free",    &cmdFree },
         { "help",    &Console::cmdHelp },
         { "reboot",  &cmdReboot },
         { "state",   &cmdState },
