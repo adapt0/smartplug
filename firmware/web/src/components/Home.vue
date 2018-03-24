@@ -19,16 +19,9 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
 
     <Chart titleText="Wattage" v-bind:in="$store.state.Rpc.wattage"></Chart>
 
-    <div>
-      <h2>{{ $store.state.Rpc.data.voltage }}V</h2>
-
-      <h2>int: {{ $store.state.Rpc.data.test.int }}</h2>
-      <div>Connected: {{ $store.state.Rpc.connected }}</div>
-      <button v-on:click="$store.dispatch('Rpc/test')">Add 1</button>
-    </div>
-
-    <div>
-      <h2>Relay: y{{$store.state.Rpc.data.relay}}</h2>
+    <div class="d-flex">
+      <h2>{{ $store.state.Rpc.data.power }}W</h2>
+      <h2 class="pl-2">{{ $store.state.Rpc.data.voltage }}V</h2>
     </div>
   </div>
 </template>

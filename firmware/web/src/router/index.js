@@ -7,6 +7,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 import Vue from 'vue'
 import Router from 'vue-router'
 import About from '@/components/About'
+import Developer from '@/components/Developer'
 import Home from '@/components/Home'
 import Settings from '@/components/Settings'
 
@@ -22,6 +23,11 @@ export default new Router({
       path: '/about',
       name: 'about',
       component: About
+    },
+    {
+      path: '/developer',
+      name: 'developer',
+      component: Developer
     },
     {
       path: '/home',
