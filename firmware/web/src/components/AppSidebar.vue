@@ -49,15 +49,18 @@ export default {
 
 <style scoped>
 .sidebar {
+  background-color: #f8f9fa;
   box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
 }
 
 .sidebar .navbar-text {
+  background-color: #343a40;
   text-align: center;
 }
 .sidebar .navbar-text h5,
 .sidebar .navbar-text a {
-  color: #000;
+  color: #fff;
+  font-weight: bold;
   text-decoration: none;
   margin: 0;
 }
@@ -67,7 +70,6 @@ export default {
   color: #333;
   display: flex;
   align-items: center;
-  padding-right: 2em;
 }
 
 .sidebar .nav-link .fa-icon {

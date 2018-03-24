@@ -12,13 +12,12 @@ import BootstrapVue from 'bootstrap-vue'
 import Icon from 'vue-awesome/components/Icon'
 import router from '@/router'
 import store from '@/store'
+import VueResource from 'vue-resource'
 
 Vue.config.productionTip = false
 
-// bootstrap
 Vue.use(BootstrapVue)
-
-// vue-awesome icon component
+Vue.use(VueResource)
 Vue.component('icon', Icon)
 
 /* eslint-disable no-new */

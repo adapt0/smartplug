@@ -6,7 +6,9 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
 -->
 <template>
   <div class="tree">
-    <div class="collapsable" v-on:click="toggle"><icon v-bind:name="(itemCollapsed) ? 'caret-right' : 'caret-down'"/><span class="key">{{name}}</span></div>
+    <div class="collapsable" v-on:click="toggle">
+      <icon v-bind:name="(itemCollapsed) ? 'caret-right' : 'caret-down'"/><span class="key">{{name}}</span>
+    </div>
     <template v-if="!itemCollapsed">
       <ul>
         <template v-for="(v, k) in value">

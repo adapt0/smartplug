@@ -8,7 +8,7 @@ import Vue from 'vue'
 
 export default class {
   constructor (path = '') {
-    this.heartbeatInterval_ = 5000 // ms between heartbeats
+    this.heartbeatInterval_ = 3000 // ms between heartbeats
     this.url_ = `ws://${document.location.host}${path}`
 
     this.eventHub_ = new Vue({

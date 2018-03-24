@@ -6,7 +6,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
   <div class="connection alert d-flex justify-content-between" v-bind:class="[ value ? 'alert-danger' : 'alert-success', { active: value }]" role="alert">
     <template v-if="value">
       <div>Connection lost. Attempting to reconnect...</div>
-      <div class="pl-4"><icon name="spinner" pulse/></div>
+      <div class="pl-4"><icon name="spinner" pulse /></div>
     </template>
     <template v-else>
       <div>Connection reestablished!</div>
