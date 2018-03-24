@@ -36,6 +36,83 @@ void WebServer::begin() {
                 request->send(response);
             }
         });
+        server_.on("/api/v1/update", HTTP_POST, [this](AsyncWebServerRequest* request) {
+            // HTTP update based on https://gist.github.com/JMishou/60cb762047b735685e8a09cd2eb42a60
+
+            const bool success = (update_request_ == request && !Update.hasError());
+
+            // request handler is triggered after the upload has finished
+            auto* response = request->beginResponse(200, "text/plain", (success) ? "OK" : "FAIL");
+            response->addHeader("Connection", "close");
+            request->send(response);
+
+            if (success) {
+                serverWebSocket_.enable(false);
+                serverWebSocket_.closeAll();
+
+                printf("Rebooting...\r\n");
+                settings_.setNeedReboot(); // Tell the main loop to restart the ESP
+            }
+
+            // finished with interlock
+            if (update_request_ == request) update_request_ = nullptr;
+
+        },[this](AsyncWebServerRequest* request, const String& filename, size_t index, uint8_t* data, size_t len, bool final) {
+            //Upload handler chunks in data
+
+            if (0 == index) { // if index == 0 then this is the first frame of data
+                printf("Update started '%s'\r\n", filename.c_str());
+
+                // block out concurrent update requests
+                if (update_request_) {
+                    printf("Update request is already in progress!\r\n");
+                    return;
+                }
+                update_request_ = request;
+                last_update_percent_ = -1;
+
+                // calculate sketch space required for the update
+                uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
+                if (!Update.begin(maxSketchSpace)) { //start with max available size
+                    Update.printError(Serial);
+                    return;
+                }
+                Update.runAsync(true); // tell the updaterClass to run in async mode
+            }
+
+            // ignore body if request doesn't match initiator
+            if (update_request_ != request) return;
+
+            // show progress if we have a content length
+            {
+                const auto contentLength = request->contentLength();
+                if (contentLength > 0) {
+                    const int percentage = index * 100 / contentLength;
+                    if (percentage != last_update_percent_) {
+                        last_update_percent_ = percentage;
+                        printf("Upload: %d%%        \r", percentage);
+                    }
+                }
+            }
+
+            // Write chunked data to the free sketch space
+            if (Update.write(data, len) != len) {
+                Update.printError(Serial);
+                update_request_ = nullptr;
+                return;
+            }
+
+            if (final) { // if the final flag is set then this is the last frame of data
+                if (Update.end(true)) { //true to set the size to the current progress
+                    printf("Update success: %u\r\n", index+len);
+                } else {
+                    Update.printError(Serial);
+                    update_request_ = nullptr;
+                    return;
+                }
+                Serial.setDebugOutput(false);
+            }
+        });
 
         // async WebSocket Event
         serverWebSocket_.onEvent([this](AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType type, void* arg, uint8_t* data, size_t len) {

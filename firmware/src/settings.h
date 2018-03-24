@@ -41,6 +41,12 @@ public:
     void tick();
 
     /////////////////////////////////////////////////////////////////////////
+    /// indicates device needs to be rebooted
+    bool needReboot() const { return need_reboot_; }
+    /// indicate that we need to perform a reboot
+    void setNeedReboot() { need_reboot_ = true; }
+
+    /////////////////////////////////////////////////////////////////////////
     /// output JSON
     JsonObject& toJson(JsonBuffer& buffer) {
         return propRoot_.toJson(buffer);
@@ -69,10 +75,12 @@ private:
     PropertyFloat           propPower_;
     PropertyFloat           propVoltage_;
 
-    FuncOnDirtyProperties   onDirtyProperties_; ///< on dirty property notification
-    unsigned long           lastMillis_{0};     ///< last dirty check
+    FuncOnDirtyProperties   onDirtyProperties_;     ///< on dirty property notification
+    unsigned long           lastMillis_{0};         ///< last dirty check
 
-    FuncOnRelay             onRelay_;           ///< on relay
+    FuncOnRelay             onRelay_;               ///< on relay
+
+    bool                    need_reboot_{false};    ///< need to perform a reboot
 };
 
 #endif // INCLUDED__SETTINGS

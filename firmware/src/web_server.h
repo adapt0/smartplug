@@ -31,6 +31,8 @@ private:
     AsyncWebServer  server_{80};        ///< async web server
     AsyncWebSocket  serverWebSocket_;   ///< async web socket
     Settings&       settings_;          ///< settings access
+    AsyncWebServerRequest* update_request_{nullptr};    ///< tracks update request
+    int             last_update_percent_{-1};           ///< last reported percentage
 };
 
 #endif // INCLUDED__WEB_SERVER

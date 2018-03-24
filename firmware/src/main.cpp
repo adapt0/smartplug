@@ -63,7 +63,7 @@ void cmdFree(const char*[], int) {
 }
 /// reboot
 void cmdReboot(const char*[], int) {
-    ESP.reset();
+    settings.setNeedReboot();
 }
 /// dump state
 void cmdState(const char*[], int) {
@@ -188,6 +188,8 @@ void loop() {
     updateManager.tick();
     webServer.tick();
     wifiManager.tick();
+
+    if (settings.needReboot()) ESP.reset();
 
     yield();
 }
