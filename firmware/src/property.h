@@ -23,6 +23,7 @@ class PropertyValueT;
 using PropertyBool  = PropertyValueT<bool>;     ///< holds a boolean
 using PropertyFloat = PropertyValueT<float>;    ///< holds a float
 using PropertyInt   = PropertyValueT<int>;      ///< holds an integer
+using PropertyString= PropertyValueT<String>;   ///< holds a string
 
 /////////////////////////////////////////////////////////////////////////////
 /// property encapsulation
@@ -52,6 +53,8 @@ public:
     /// dirty property? (property changed)
     bool dirty() const { return dirty_; }
     void markDirty();
+
+    virtual void clearDirty();
 
 protected:
     /////////////////////////////////////////////////////////////////////////
@@ -93,6 +96,8 @@ public:
 
     void addChild(Property& child);
     void removeChild(Property& child);
+
+    void clearDirty() override;
 
     JsonObject& toJson(JsonBuffer& buffer, int flags = 0);
 
@@ -162,5 +167,11 @@ protected:
 private:
     T   value_{};   ///< held value
 };
+
+/// specialize toJson handling of String
+template <>
+inline void PropertyValueT<String>::toJson_(JsonObject& json, int /*flags*/) {
+    json.set(name().c_str(), value().c_str());
+}
 
 #endif // INCLUDED__PROPERTY

@@ -55,11 +55,17 @@ public:
     /////////////////////////////////////////////////////////////////////////
     /// dirty properties
     void onDirtyProperties(FuncOnDirtyProperties onDirtyProperties) {
+        propRoot_.clearDirty();
         onDirtyProperties_ = std::move(onDirtyProperties);
     }
     /// relay changes
     void onRelay(FuncOnRelay onRelay) {
         onRelay_ = std::move(onRelay);
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+    void setSsid(String ssid) {
+        propSysSsid_.setValue(std::move(ssid));
     }
 
     CommandResult onCommand(const char* method, const JsonVariant& params, JsonBuffer& buffer);
@@ -70,6 +76,7 @@ private:
     PropertyNode            propRoot_;
     PropertyBool            propRelay_;
     PropertyNode            propSys_;
+    PropertyString          propSysSsid_;
     PropertyNode            propTest_;
     PropertyInt             propTestInt_;
     PropertyFloat           propPower_;

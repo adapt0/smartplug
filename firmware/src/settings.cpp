@@ -15,6 +15,7 @@ extern "C" unsigned long millis();
 Settings::Settings()
 : propRelay_{ &propRoot_, "relay" }
 , propSys_{ &propRoot_, "sys" }
+, propSysSsid_{ &propSys_, "ssid" }
 , propTest_{ &propRoot_, "test" }
 , propTestInt_{ &propTest_, "int", 42 }
 , propPower_{ &propRoot_, "power" }

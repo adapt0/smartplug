@@ -12,6 +12,9 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 #include <ESP8266WiFi.h>
 #include <functional>
 
+//- forwards
+class Settings;
+
 /////////////////////////////////////////////////////////////////////////////
 /// WiFi manager
 class WifiManager {
@@ -19,8 +22,9 @@ public:
     using OnConnected = std::function<void (const IPAddress&)>;
 
     /////////////////////////////////////////////////////////////////////////
-    explicit WifiManager(int pinLed = -1)
-    : pinLed_(pinLed)
+    explicit WifiManager(Settings& settings, int pinLed = -1)
+    : settings_(settings)
+    , pinLed_(pinLed)
     { }
 
     void begin();
@@ -49,6 +53,7 @@ private:
     void disconnect_();
     void updateLed_();
 
+    Settings&   settings_;              ///< settings access
     String      hostname_;              ///< our hostname
     String      apPassword_;            ///< our AP's password
     OnConnected onConnected_;           ///< on connected callback

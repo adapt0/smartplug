@@ -9,6 +9,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 
 //- includes
 #include "wifi_manager.h"
+#include "settings.h"
 
 /////////////////////////////////////////////////////////////////////////////
 void WifiManager::begin() {
@@ -19,6 +20,9 @@ void WifiManager::begin() {
 
     // begin wifi (restores from SDKs stored settings)
     WiFi.begin();
+
+    //
+    settings_.setSsid(WiFi.SSID());
 
     //
     const auto mode = WiFi.getMode();

@@ -30,6 +30,12 @@ Property::~Property() {
 }
 
 /////////////////////////////////////////////////////////////////////////////
+/// clear dirty
+void Property::clearDirty() {
+    dirty_ = false;
+}
+
+/////////////////////////////////////////////////////////////////////////////
 /// mark property (+ parents) as dirty
 void Property::markDirty() {
     dirty_ = true;
@@ -69,6 +75,15 @@ void PropertyNode::removeChild(Property& child) {
     if (&child == childLast_)  childLast_  = child.siblingPrev_;
 
     child.parent_ = nullptr;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+/// clear dirty
+void PropertyNode::clearDirty() {
+    Property::clearDirty();
+    for (auto it = childFirst_; it; it = it->siblingNext_) {
+        it->clearDirty();
+    }
 }
 
 /////////////////////////////////////////////////////////////////////////////
