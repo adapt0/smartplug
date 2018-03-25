@@ -64,6 +64,9 @@ ul {
 }
 li {
   list-style: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 div.collapsable {
@@ -74,6 +77,8 @@ span.key {
   color: #222;
   font-weight: bold;
 }
+span.value {
+}
 
 .fa-icon {
   margin-right: 4px;
@@ -81,7 +86,6 @@ span.key {
   vertical-align: text-bottom;
   width: 8px;
 }
-
 li > .fa-icon {
   color: #777;
 }
