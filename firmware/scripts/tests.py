@@ -1,4 +1,3 @@
-from SCons.Script import AlwaysBuild, Default, DefaultEnvironment
 """
 Build + run DocTest powered tests as part of an environment build
 
@@ -64,6 +63,7 @@ test_env.Append(
     CCFLAGS = ['-g', '-ggdb'],
 )
 
+
 def search_cpppaths(source):
     """search CPPPATH for a source file"""
     for cpppath in env['CPPPATH']:
@@ -71,6 +71,7 @@ def search_cpppaths(source):
         if os.path.exists(p):
             return test_env.Object(p, **source[1])
     return source_file
+
 
 # minimal Arduino sources
 arduino_sources = [
@@ -86,8 +87,8 @@ arduino_lib = test_env.StaticLibrary(os.path.join(projectbuild_dir, 'arduino'), 
 # Create a builder for tests
 def builder_unit_test(target, source, env):
     return subprocess.call([ source[0].abspath ])
-bld = Builder(action = builder_unit_test)
-test_env.Append(BUILDERS = {'Test' :  bld})
+bld = Builder(action=builder_unit_test)
+test_env.Append(BUILDERS={'Test': bld})
 
 
 # tests
@@ -96,5 +97,5 @@ program = test_env.Program(os.path.join(projectbuild_dir, 'tests'), [
     Glob(os.path.join(test_env['PROJECTSRC_DIR'], '*.cpp')),
 ], LIBS = [arduino_lib])
 
-tests = [test_env.Test("test.passed.1", program)]
+tests = [test_env.Test("buildtests", program)]
 Default(tests)

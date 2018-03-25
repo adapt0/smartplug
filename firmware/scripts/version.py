@@ -71,27 +71,44 @@ namespace version {
         return "#error " + str(e)
 
 
-def version_generate_source_file(target, source, env):
+def generate_version_for(target, version_contents):
     """
-    Generate version source file
-    We leave scons to figure out if contents have change
+    Generate version dependency for target
     """
-    fd = open(target[0].path, 'w')
-    fd.write(version_generate_contents())
-    fd.close()
-    return 0
+
+    def write_action(target, source, env):
+        """
+        Write version contents to source file
+        We leave scons to figure out if contents have change
+        """
+        fd = open(target[0].path, 'w')
+        fd.write(version_contents)
+        fd.close()
+        return 0
+
+    build_version = target.env.Command(
+        os.path.join(os.path.dirname(target.get_path()), "src", "__generated_version__.cpp"),
+        [],
+        write_action
+    )
+    version_obj = target.env.Object(build_version[0])
+
+    # http://scons.org/doc/production/HTML/scons-user.html#idm139933296986288
+    target.env.AlwaysBuild(build_version)
+    target.env.Append(LINKFLAGS=version_obj)
+    # Requires(target, version_obj)
+    target.env.Depends(target, version_obj)
 
 
+# generate version contents
+version_contents = version_generate_contents()
+
+# main elf executable target
 elf_target = env.File("$BUILD_DIR/${PROGNAME}.elf")
-build_version = env.Command(
-    os.path.join(os.path.dirname(elf_target.get_path()), "src", "__generated_version__.cpp"),
-    [],
-    version_generate_source_file
-)
-version_obj = Object(build_version[0])
+generate_version_for(elf_target, version_contents)
 
-# http://scons.org/doc/production/HTML/scons-user.html#idm139933296986288
-env.AlwaysBuild(build_version)
-env.Append(LINKFLAGS=version_obj)
-# Requires(elf_target, version_obj)
-env.Depends(elf_target, version_obj)
+# tests build target -> tests executable target
+tests_build_target = env.Entry("buildtests")
+if len(tests_build_target.sources):
+    tests_target = tests_build_target.sources[0]
+    generate_version_for(tests_target, version_contents)
