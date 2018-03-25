@@ -14,6 +14,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 #include "settings.h"
 #include "smartplug.h"
 #include "update_manager.h"
+#include "version.h"
 #include "web_server.h"
 #include "wifi_manager.h"
 #include <ESP8266mDNS.h>
@@ -28,7 +29,7 @@ namespace {
     SmartPlug           smartPlug{settings};
     UpdateManager       updateManager;
     WebServer           webServer{settings};
-    WifiManager         wifiManager{SmartPlug::PIN_BLUE_LED};
+    WifiManager         wifiManager{settings, SmartPlug::PIN_BLUE_LED};
 
     bool                otaInProgress = false;
 
@@ -38,7 +39,7 @@ namespace {
 /////////////////////////////////////////////////////////////////////////////
 /// print out version
 void printVersion() {
-    printf("SmartPlug v0.01\r\n");
+    printf("SmartPlug %s\r\n", version::STRING_FULL);
 }
 
 /////////////////////////////////////////////////////////////////////////////
