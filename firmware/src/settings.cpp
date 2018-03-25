@@ -8,6 +8,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 
 //- includes
 #include "settings.h"
+#include "version.h"
 
 extern "C" unsigned long millis();
 
@@ -19,6 +20,8 @@ Settings::Settings()
 , propTest_{ &propRoot_, "test" }
 , propTestInt_{ &propTest_, "int", 42 }
 , propPower_{ &propRoot_, "power" }
+, propVersion_{ &propRoot_, "version", version::STRING }
+, propVersionGit_{ &propRoot_, "gitRev", version::GIT_REV }
 , propVoltage_{ &propRoot_, "voltage" }
 { }
 

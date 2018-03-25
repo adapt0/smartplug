@@ -80,6 +80,8 @@ private:
     PropertyNode            propTest_;
     PropertyInt             propTestInt_;
     PropertyFloat           propPower_;
+    PropertyString          propVersion_;
+    PropertyString          propVersionGit_;
     PropertyFloat           propVoltage_;
 
     FuncOnDirtyProperties   onDirtyProperties_;     ///< on dirty property notification
