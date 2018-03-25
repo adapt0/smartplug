@@ -21,12 +21,21 @@ const placeholderWattage = () => {
 
 // Vuex store attachment
 export default function (store) {
+  let lastGitRevision = null
+
   console.log('RpcInit')
 
   // WebSocket RPC
   const rpcSocket = new RpcSocket('/api/v1')
   rpcSocket.on('connect', (data) => {
     store.commit('Rpc/connectionState', data)
+
+    // force a reload if the remote git revision has changed since our last connection
+    if (lastGitRevision && lastGitRevision !== data.gitRev) {
+      console.log('*** RPC forcing reload')
+      window.location.reload(true)
+    }
+    lastGitRevision = data.gitRev
 
     // start logging Wattage
     const timerId = setInterval(() => {

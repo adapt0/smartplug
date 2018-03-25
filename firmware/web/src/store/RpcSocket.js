@@ -71,6 +71,9 @@ export default class {
     this.eventHub_.$emit('connect', this.state_)
   }
   onDisconnect_ () {
+    // skip if reconnect is already in progress
+    if (!this.connected_ && this.timerId_) return
+
     console.log('disconnected')
     this.eventHub_.connected = false
     this.connected_ = false
