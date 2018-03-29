@@ -4,11 +4,11 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
 -->
 <template>
   <div class="index">
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <div class="header d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
       <h1 class="h2">Developer</h1>
     </div>
 
-    <div class="row">
+    <div class="content row">
       <div class="col-sm-6">
         <div class="card">
           <div class="card-body">

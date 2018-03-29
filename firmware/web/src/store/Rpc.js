@@ -68,7 +68,21 @@ export default function (store) {
       wattage: placeholderWattage(),
       data: {
         relay: null,
-        sys: { },
+        sys: {
+          net: {
+            cur: {
+              ipv4Address: '',
+              ipv4Subnet: '',
+              ipv4Gateway: ''
+            },
+            dhcp: true,
+            ipv4Address: '',
+            ipv4Subnet: '',
+            ipv4Gateway: '',
+            hostname: 'hostname',
+            ssid: 'ssid'
+          }
+        },
         test: { }
       }
     },
@@ -95,6 +109,9 @@ export default function (store) {
     actions: {
       relay (context, state) {
         return rpcSocket.request('relay', state)
+      },
+      networkApply (context, state) {
+        return rpcSocket.request('networkApply', state)
       },
       test (/* context */) {
         return rpcSocket.request('test')

@@ -4,7 +4,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
 -->
 <template>
   <div class="index">
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <div class="header d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
       <h1 class="h2">Dashboard</h1>
       <b-button-toolbar key-nav>
         <b-button-group class="mr-2">
@@ -17,11 +17,13 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
       </b-button-toolbar>
     </div>
 
-    <Chart titleText="Wattage" v-bind:in="$store.state.Rpc.wattage"></Chart>
+    <div class="content">
+      <Chart titleText="Wattage" v-bind:in="$store.state.Rpc.wattage"></Chart>
 
-    <div class="d-flex">
-      <h2>{{ $store.state.Rpc.data.power }}W</h2>
-      <h2 class="pl-2">{{ $store.state.Rpc.data.voltage }}V</h2>
+      <div class="d-flex">
+        <h2>{{ $store.state.Rpc.data.power }}W</h2>
+        <h2 class="pl-2">{{ $store.state.Rpc.data.voltage }}V</h2>
+      </div>
     </div>
   </div>
 </template>

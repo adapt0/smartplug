@@ -55,6 +55,8 @@ export default {
 
 .sidebar .navbar-text {
   background-color: #343a40;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
   text-align: center;
 }
 .sidebar .navbar-text h5,
@@ -67,32 +69,22 @@ export default {
 
 .sidebar .nav-link {
   font-weight: 500;
-  color: #333;
   display: flex;
   align-items: center;
 }
-
 .sidebar .nav-link .fa-icon {
   margin-right: 8px;
   width: 14px;
 }
-
 .sidebar .nav-link .feather {
   margin-right: 4px;
-  color: #999;
 }
-
-.sidebar .nav-link.disabled {
-  color: #aaa;
-}
-
 .sidebar .nav-link.active {
-  color: #007bff;
   background-color: rgba(0, 0, 0, 0.05);
 }
 
-.sidebar .nav-link:hover .feather,
-.sidebar .nav-link.active .feather {
+.sidebar .nav-item .nav-link:hover .feather,
+.sidebar .nav-item .nav-link.active .feather {
   color: inherit;
 }
 </style>

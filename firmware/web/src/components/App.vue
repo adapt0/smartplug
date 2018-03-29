@@ -8,9 +8,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
     </connection-alert>
     <div class="body">
       <AppSidebar />
-      <div class="content">
-        <router-view/>
-      </div>
+      <router-view class="route" />
     </div>
     <div class="connection-overlay" v-bind:class="{ offline: !$store.state.Rpc.connected }"></div>
   </div>
@@ -47,11 +45,38 @@ html, body, #app {
   flex: 1;
   display: flex;
 }
-#app > .body > .content {
+#app > .body > .route {
   overflow: scroll;
   flex: 1;
   min-width: 0;
+}
+.route .header {
+  padding-top: 0.5em;
+  padding-left: 1em;
+}
+.route .content {
   padding: 1em;
+}
+.route .header + .content {
+  padding-top: 0;
+}
+
+.route .tabs .card-header {
+  /*background-color: #343a40;*/
+  padding-top: 0.4rem;
+}
+
+.nav-item .nav-link {
+  color: #333;
+}
+.nav-item .nav-link .feather {
+  color: #999;
+}
+.nav-item .nav-link.disabled {
+  color: #aaa;
+}
+.nav-item .nav-link.active {
+  color: #007bff;
 }
 
 #app > .connection-overlay {
