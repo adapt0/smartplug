@@ -33,7 +33,6 @@ import os
 import subprocess
 
 Import("env")
-# print env.Dump()
 
 # paths
 projectbuild_dir = os.path.join(env['PROJECTBUILD_DIR'], 'tests')
@@ -63,6 +62,14 @@ test_env.Append(
     CCFLAGS = ['-g', '-ggdb'],
 )
 
+#todo: check if we're using clang
+test_env.Append(
+    CXXFLAGS  = ['-fsanitize=address', '-fno-omit-frame-pointer'],
+    LINKFLAGS = ['-fsanitize=address'],
+)
+
+# print test_env.Dump()
+
 
 def search_cpppaths(source):
     """search CPPPATH for a source file"""
@@ -74,10 +81,13 @@ def search_cpppaths(source):
 
 
 # minimal Arduino sources
+arduino_sources_opts = { "CCFLAGS": ['-include', 'cmath' ] }
 arduino_sources = [
     ('core_esp8266_noniso.c', { "CCFLAGS": ['-Wno-absolute-value'] }),
+    ('IPAddress.cpp', arduino_sources_opts),
+    ('Print.cpp', arduino_sources_opts),
     ('pgmspace.cpp', {}),
-    ('WString.cpp', { "CCFLAGS": ['-include', 'cmath' ] }),
+    ('WString.cpp', arduino_sources_opts),
 ]
 arduino_lib = test_env.StaticLibrary(os.path.join(projectbuild_dir, 'arduino'), [
     map(search_cpppaths, arduino_sources)
