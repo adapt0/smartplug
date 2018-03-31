@@ -233,7 +233,7 @@ void WebServer::onJsonRpc_(AsyncWebSocketClient* client, char* data) {
     // process request
     {
         DynamicJsonBuffer responseBuffer;
-        auto result = settings_.onCommand(method, params, responseBuffer);
+        auto result = settings_.call(method, params, responseBuffer);
 
         // fill in response
         auto& response = responseBuffer.createObject();

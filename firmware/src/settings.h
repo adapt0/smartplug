@@ -10,6 +10,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 
 //- includes
 #include "property.h"
+#include <IPAddress.h>
 #include <functional>
 
 /// JSON-RPC error codes
@@ -28,12 +29,24 @@ enum class JsonRpcError {
 /// persistent settings
 class Settings {
 public:
-    /// response to command request
-    using CommandResult = std::pair<JsonRpcError, JsonVariant>;
+    /// network settings to apply
+    struct Network {
+        String hostname;
+        String ssid;
+        String password;
+        IPAddress   ipv4Address;
+        IPAddress   ipv4Subnet;
+        IPAddress   ipv4Gateway;
+    };
+
+    /// response to method call
+    using Result = std::pair<JsonRpcError, JsonVariant>;
     /// callback for dirty property notifications
     using FuncOnDirtyProperties = std::function<void (const JsonObject&, JsonBuffer& buffer)>;
     /// callback on relay change
     using FuncOnRelay = std::function<void (bool)>;
+    /// callback on network settings
+    using FuncOnNetwork = std::function<bool (const Network&)>;
 
     Settings();
 
@@ -58,6 +71,10 @@ public:
         propRoot_.clearDirty();
         onDirtyProperties_ = std::move(onDirtyProperties);
     }
+    /// network settings
+    void onNetwork(FuncOnNetwork onNetwork) {
+        onNetwork_ = std::move(onNetwork);
+    }
     /// relay changes
     void onRelay(FuncOnRelay onRelay) {
         onRelay_ = std::move(onRelay);
@@ -68,11 +85,25 @@ public:
         propSysSsid_.setValue(std::move(ssid));
     }
 
-    CommandResult onCommand(const char* method, const JsonVariant& params, JsonBuffer& buffer);
+    Result call(const char* method, const JsonVariant& params, JsonBuffer& buffer);
 
     void updateMeasurements(double watts, double volts);
 
 private:
+    /// member function pointer for handling methods
+    using MethodFunc = Result (Settings::*)(const JsonVariant&, JsonBuffer&);
+    /// method name to member function binding
+    using MethodFuncPair = std::pair<const char*, MethodFunc>;
+
+    Result methodNetwork_(const JsonVariant& params, JsonBuffer& buffer);
+    Result methodPing_(const JsonVariant& params, JsonBuffer& buffer);
+    Result methodRelay_(const JsonVariant& params, JsonBuffer& buffer);
+    Result methodState_(const JsonVariant& params, JsonBuffer& buffer);
+    Result methodTest_(const JsonVariant& params, JsonBuffer& buffer);
+
+    /// collection of methods to member functions
+    static const MethodFuncPair methods_[];
+
     PropertyNode            propRoot_;
     PropertyBool            propRelay_;
     PropertyNode            propSys_;
@@ -87,6 +118,7 @@ private:
     FuncOnDirtyProperties   onDirtyProperties_;     ///< on dirty property notification
     unsigned long           lastMillis_{0};         ///< last dirty check
 
+    FuncOnNetwork           onNetwork_;             ///< on network settings
     FuncOnRelay             onRelay_;               ///< on relay
 
     bool                    need_reboot_{false};    ///< need to perform a reboot
