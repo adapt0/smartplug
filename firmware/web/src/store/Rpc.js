@@ -64,7 +64,7 @@ export default function (store) {
   store.registerModule('Rpc', {
     namespaced: true,
     state: {
-      connected: true, // assumes we're initially connected
+      connected: null, // assumes we're initially connected
       wattage: placeholderWattage(),
       data: {
         relay: null,
@@ -73,12 +73,16 @@ export default function (store) {
             cur: {
               ipv4Address: '',
               ipv4Subnet: '',
-              ipv4Gateway: ''
+              ipv4Gateway: '',
+              ipv4Dns1: '',
+              ipv4Dns2: ''
             },
             dhcp: true,
             ipv4Address: '',
             ipv4Subnet: '',
             ipv4Gateway: '',
+            ipv4Dns1: '',
+            ipv4Dns2: '',
             hostname: 'hostname',
             ssid: 'ssid'
           }
@@ -110,8 +114,8 @@ export default function (store) {
       relay (context, state) {
         return rpcSocket.request('relay', state)
       },
-      networkApply (context, state) {
-        return rpcSocket.request('networkApply', state)
+      network (context, state) {
+        return rpcSocket.request('network', state)
       },
       test (/* context */) {
         return rpcSocket.request('test')

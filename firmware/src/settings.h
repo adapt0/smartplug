@@ -12,6 +12,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 #include "property.h"
 #include <IPAddress.h>
 #include <functional>
+#include <memory>
 
 /// JSON-RPC error codes
 enum class JsonRpcError {
@@ -31,13 +32,17 @@ class Settings {
 public:
     /// network settings to apply
     struct Network {
-        String hostname;
-        String ssid;
-        String password;
+        String      hostname;
+        String      ssid;
+        String      password;
         IPAddress   ipv4Address;
         IPAddress   ipv4Subnet;
         IPAddress   ipv4Gateway;
+        IPAddress   ipv4Dns1;
+        IPAddress   ipv4Dns2;
     };
+    /// pointer to Network
+    using NetworkUPtr = std::unique_ptr<Network>;
 
     /// response to method call
     using Result = std::pair<JsonRpcError, JsonVariant>;
@@ -46,7 +51,7 @@ public:
     /// callback on relay change
     using FuncOnRelay = std::function<void (bool)>;
     /// callback on network settings
-    using FuncOnNetwork = std::function<bool (const Network&)>;
+    using FuncOnNetwork = std::function<bool (NetworkUPtr&&)>;
 
     Settings();
 
@@ -81,8 +86,11 @@ public:
     }
 
     /////////////////////////////////////////////////////////////////////////
-    void setSsid(String ssid) {
-        propSysSsid_.setValue(std::move(ssid));
+    /// update network settings
+    void updateNetwork(Network&& network) {
+        propSysNetHostname_.set(std::move(network.hostname));
+        propSysNetSsid_.set(std::move(network.ssid));
+        propSysNetCurIpv4_.set(network);
     }
 
     Result call(const char* method, const JsonVariant& params, JsonBuffer& buffer);
@@ -95,19 +103,54 @@ private:
     /// method name to member function binding
     using MethodFuncPair = std::pair<const char*, MethodFunc>;
 
+    /// collection of methods to member functions
+    static const MethodFuncPair methods_[];
+
     Result methodNetwork_(const JsonVariant& params, JsonBuffer& buffer);
     Result methodPing_(const JsonVariant& params, JsonBuffer& buffer);
     Result methodRelay_(const JsonVariant& params, JsonBuffer& buffer);
     Result methodState_(const JsonVariant& params, JsonBuffer& buffer);
     Result methodTest_(const JsonVariant& params, JsonBuffer& buffer);
 
-    /// collection of methods to member functions
-    static const MethodFuncPair methods_[];
+
+    /////////////////////////////////////////////////////////////////////////
+    /// collection of IPv4 address properties
+    struct Ipv4Properties {
+        explicit Ipv4Properties(PropertyNode* parent)
+        : address{ parent, "ipv4Address" }
+        , subnet{ parent, "ipv4Subnet" }
+        , gateway{ parent, "ipv4Gateway" }
+        , dns1{ parent, "ipv4Dns1" }
+        , dns2{ parent, "ipv4Dns2" }
+        { }
+
+        /// update properties from Network settings
+        void set(const Network& network) {
+            address.set(network.ipv4Address);
+            subnet.set(network.ipv4Subnet);
+            gateway.set(network.ipv4Gateway);
+            dns1.set(network.ipv4Dns1);
+            dns2.set(network.ipv4Dns2);
+        }
+
+        PropertyIpAddress   address;
+        PropertyIpAddress   subnet;
+        PropertyIpAddress   gateway;
+        PropertyIpAddress   dns1;
+        PropertyIpAddress   dns2;
+    };
+
 
     PropertyNode            propRoot_;
     PropertyBool            propRelay_;
     PropertyNode            propSys_;
-    PropertyString          propSysSsid_;
+    PropertyNode            propSysNet_;
+    PropertyString          propSysNetHostname_;
+    PropertyString          propSysNetSsid_;
+    PropertyBool            propSysNetDhcp_;
+    Ipv4Properties          propSysNetIpv4_;
+    PropertyNode            propSysNetCur_;
+    Ipv4Properties          propSysNetCurIpv4_;
     PropertyNode            propTest_;
     PropertyInt             propTestInt_;
     PropertyFloat           propPower_;

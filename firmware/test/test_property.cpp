@@ -48,7 +48,7 @@ TEST_SUITE("Property") {
                 CHECK(prop_parent_child1.dirty());
                 CHECK(toJson(root) == R"({"parent":{"bool":false},"child":0})");
 
-                prop_parent_child1.setValue(true);
+                prop_parent_child1.set(true);
                 CHECK(prop_parent_child1.value() == true);
                 CHECK(prop_parent_child1.dirty());
                 CHECK(toJson(root) == R"({"parent":{"bool":true},"child":0})");
@@ -60,11 +60,20 @@ TEST_SUITE("Property") {
                     CHECK(prop_parent_child2.dirty());
                     CHECK(toJson(root) == R"({"parent":{"bool":true,"int":314},"child":0})");
 
-                    prop_parent_child2.setValue(123);
+                    prop_parent_child2.set(123);
                     CHECK(prop_parent_child2.value() == 123);
                     CHECK(prop_parent_child2.dirty());
                     CHECK(toJson(root) == R"({"parent":{"bool":true,"int":123},"child":0})");
                 }
+
+                {
+                    PropertyIpAddress prop_parent_child2{ &prop_parent, "ip", IPAddress{192, 168, 1, 100} };
+                    CHECK(prop_parent_child2.name() == "ip");
+                    CHECK(prop_parent_child2.value() == IPAddress{192, 168, 1, 100});
+                    CHECK(prop_parent_child2.dirty());
+                    CHECK(toJson(root) == R"({"parent":{"bool":true,"ip":"192.168.1.100"},"child":0})");
+                }
+
                 CHECK(toJson(root) == R"({"parent":{"bool":true},"child":0})");
             }
             CHECK(toJson(root) == R"({"parent":{},"child":0})");
@@ -101,13 +110,13 @@ TEST_SUITE("Property") {
                 CHECK(toJson(root, Property::JSON_DIRTY) == R"({})"); // no changes
                 CHECK(false == root.dirty());
 
-                child.setValue(345);
+                child.set(345);
                 CHECK(root.dirty());
                 CHECK(toJson(root, Property::JSON_DIRTY) == R"({"parent":{"child":345}})");
                 CHECK(false == root.dirty());
 
-                child.setValue(1);
-                child2.setValue(2);
+                child.set(1);
+                child2.set(2);
                 CHECK(root.dirty());
                 CHECK(toJson(root, Property::JSON_DIRTY) == R"({"parent":{"child":1,"child2":2}})");
                 CHECK(false == root.dirty());

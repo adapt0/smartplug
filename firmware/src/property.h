@@ -10,6 +10,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 
 //- includes
 #include <cassert>
+#include <IPAddress.h>
 #include <utility>
 #include <WString.h>
 #include <ArduinoJson.h>
@@ -20,10 +21,11 @@ class PropertyNode;
 template <typename T>
 class PropertyValueT;
 
-using PropertyBool  = PropertyValueT<bool>;     ///< holds a boolean
-using PropertyFloat = PropertyValueT<float>;    ///< holds a float
-using PropertyInt   = PropertyValueT<int>;      ///< holds an integer
-using PropertyString= PropertyValueT<String>;   ///< holds a string
+using PropertyBool      = PropertyValueT<bool>;     ///< holds a boolean
+using PropertyFloat     = PropertyValueT<float>;    ///< holds a float
+using PropertyInt       = PropertyValueT<int>;      ///< holds an integer
+using PropertyIpAddress = PropertyValueT<IPAddress>;///< holds an IP address
+using PropertyString    = PropertyValueT<String>;   ///< holds a string
 
 /////////////////////////////////////////////////////////////////////////////
 /// property encapsulation
@@ -151,7 +153,7 @@ public:
 
     /////////////////////////////////////////////////////////////////////////
     /// assign new value
-    void setValue(T new_value) {
+    void set(T new_value) {
         if (value_ == new_value) return;
         value_ = new_value;
         markDirty();
@@ -168,10 +170,10 @@ private:
     T   value_{};   ///< held value
 };
 
-/// specialize toJson handling of String
+/// specialize toJson handling of IPAddress
 template <>
-inline void PropertyValueT<String>::toJson_(JsonObject& json, int /*flags*/) {
-    json.set(name().c_str(), value().c_str());
+inline void PropertyValueT<IPAddress>::toJson_(JsonObject& json, int /*flags*/) {
+    json.set(name().c_str(), value().toString());
 }
 
 #endif // INCLUDED__PROPERTY

@@ -96,7 +96,7 @@ JsonObject& PropertyNode::toJson(JsonBuffer& buffer, int flags) {
 }
 /// convert child properties to JSON
 void PropertyNode::toJson_(JsonObject& json, int flags) {
-    auto& obj = json.createNestedObject(name().c_str());
+    auto& obj = json.createNestedObject(name());
     jsonChildren_(obj, flags);
 }
 /// fill JSON with children

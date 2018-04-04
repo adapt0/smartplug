@@ -28,9 +28,9 @@ TEST_SUITE("Settings") {
     TEST_CASE("call - network") {
         Settings settings;
 
-        Settings::Network networkSettings;
-        settings.onNetwork([&networkSettings](const Settings::Network& toApply) {
-            networkSettings = toApply;
+        Settings::NetworkUPtr networkSettings;
+        settings.onNetwork([&networkSettings](Settings::NetworkUPtr&& toApply) {
+            networkSettings = std::move(toApply);
             return true;
         });
 
@@ -92,12 +92,12 @@ TEST_SUITE("Settings") {
             CHECK(result.first == JsonRpcError::NO_ERROR);
             CHECK(result.second == true);
 
-            CHECK(networkSettings.hostname == "");
-            CHECK(networkSettings.ssid == "ssid");
-            CHECK(networkSettings.password == "");
-            CHECK(networkSettings.ipv4Address.toString() == "0.0.0.0");
-            CHECK(networkSettings.ipv4Subnet.toString()  == "0.0.0.0");
-            CHECK(networkSettings.ipv4Gateway.toString() == "0.0.0.0");
+            CHECK(networkSettings->hostname == "");
+            CHECK(networkSettings->ssid == "ssid");
+            CHECK(networkSettings->password == "");
+            CHECK(networkSettings->ipv4Address.toString() == "0.0.0.0");
+            CHECK(networkSettings->ipv4Subnet.toString()  == "0.0.0.0");
+            CHECK(networkSettings->ipv4Gateway.toString() == "0.0.0.0");
         }
         {
             DynamicJsonBuffer buffer;
@@ -110,12 +110,12 @@ TEST_SUITE("Settings") {
             CHECK(result.first == JsonRpcError::NO_ERROR);
             CHECK(result.second == true);
 
-            CHECK(networkSettings.hostname == "");
-            CHECK(networkSettings.ssid == "ssid");
-            CHECK(networkSettings.password == "");
-            CHECK(networkSettings.ipv4Address.toString() == "0.0.0.0");
-            CHECK(networkSettings.ipv4Subnet.toString()  == "0.0.0.0");
-            CHECK(networkSettings.ipv4Gateway.toString() == "0.0.0.0");
+            CHECK(networkSettings->hostname == "");
+            CHECK(networkSettings->ssid == "ssid");
+            CHECK(networkSettings->password == "");
+            CHECK(networkSettings->ipv4Address.toString() == "0.0.0.0");
+            CHECK(networkSettings->ipv4Subnet.toString()  == "0.0.0.0");
+            CHECK(networkSettings->ipv4Gateway.toString() == "0.0.0.0");
         }
         {
             DynamicJsonBuffer buffer;
@@ -131,12 +131,12 @@ TEST_SUITE("Settings") {
             CHECK(result.first == JsonRpcError::NO_ERROR);
             CHECK(result.second == true);
 
-            CHECK(networkSettings.hostname == "hostname");
-            CHECK(networkSettings.ssid     == "ssid");
-            CHECK(networkSettings.password == "password");
-            CHECK(networkSettings.ipv4Address.toString() == "192.168.1.2");
-            CHECK(networkSettings.ipv4Subnet.toString()  == "255.255.255.0");
-            CHECK(networkSettings.ipv4Gateway.toString() == "192.168.1.1");
+            CHECK(networkSettings->hostname == "hostname");
+            CHECK(networkSettings->ssid     == "ssid");
+            CHECK(networkSettings->password == "password");
+            CHECK(networkSettings->ipv4Address.toString() == "192.168.1.2");
+            CHECK(networkSettings->ipv4Subnet.toString()  == "255.255.255.0");
+            CHECK(networkSettings->ipv4Gateway.toString() == "192.168.1.1");
         }
     }
 

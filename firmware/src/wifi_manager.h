@@ -9,16 +9,15 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 #define INCLUDED__WIFIMANAGER
 
 //- includes
+#include "settings.h"
 #include <ESP8266WiFi.h>
 #include <functional>
-
-//- forwards
-class Settings;
 
 /////////////////////////////////////////////////////////////////////////////
 /// WiFi manager
 class WifiManager {
 public:
+    using NetworkUPtr = Settings::NetworkUPtr;
     using OnConnected = std::function<void (const IPAddress&)>;
 
     /////////////////////////////////////////////////////////////////////////
@@ -51,12 +50,16 @@ public:
 
 private:
     void disconnect_();
+    bool onNetworkSettings_(NetworkUPtr&& network);
+    void tickApplyNetworkSettings_();
     void updateLed_();
+    void updateNetworkSettings_();
 
     Settings&   settings_;              ///< settings access
     String      hostname_;              ///< our hostname
     String      apPassword_;            ///< our AP's password
     OnConnected onConnected_;           ///< on connected callback
+    NetworkUPtr networkToApply_;        ///< new network settings to apply
     int         pinLed_ = -1;           ///< connectivity LED
     bool        staConnected_ = false;  ///< is STA connected?
 };

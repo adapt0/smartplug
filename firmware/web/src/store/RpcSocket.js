@@ -111,7 +111,11 @@ export default class {
     const promise = this.pending_[msg.id]
     if (promise) {
       delete this.pending_[msg.id]
-      promise.resolve(msg.result)
+      if (msg.error) {
+        promise.reject(msg.error)
+      } else {
+        promise.resolve(msg.result)
+      }
     }
 
     // non-solicited update
