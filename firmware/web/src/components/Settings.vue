@@ -50,8 +50,14 @@ export default {
 }
 </script>
 
-<style scoped>
-form {
-  max-width: 640px;
+<style>
+.tabs {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.tab-content {
+  flex: 1;
+  overflow: scroll;
 }
 </style>

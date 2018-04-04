@@ -3,8 +3,8 @@
 Licensed under the MIT License. Refer to LICENSE file in the project root.
 -->
 <template>
-  <div class="connection alert d-flex justify-content-between" v-bind:class="[ value ? 'alert-danger' : 'alert-success', { active: value }]" role="alert">
-    <template v-if="value">
+  <div class="connection alert d-flex justify-content-between" v-bind:class="[ disconnected ? 'alert-danger' : 'alert-success', { active: disconnected }]" role="alert">
+    <template v-if="disconnected">
       <div>Connection lost. Attempting to reconnect...</div>
       <div class="pl-4"><icon name="spinner" pulse /></div>
     </template>
@@ -21,7 +21,12 @@ export default {
   props: {
     value: {
       type: Boolean,
-      default: false
+      default: true
+    }
+  },
+  computed: {
+    disconnected () {
+      return this.value === false
     }
   }
 }
@@ -38,6 +43,8 @@ export default {
   border-top-right-radius: 0;
   text-align: center;
   z-index: 1000;
+
+  pointer-events: none;
 
   opacity: 0;
   top: -100%;

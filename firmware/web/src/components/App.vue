@@ -4,13 +4,13 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
 -->
 <template>
   <div id="app">
-    <connection-alert :value="!$store.state.Rpc.connected">
+    <connection-alert :value="$store.state.Rpc.connected">
     </connection-alert>
     <div class="body">
       <AppSidebar />
       <router-view class="route" />
     </div>
-    <div class="connection-overlay" v-bind:class="{ offline: !$store.state.Rpc.connected }"></div>
+    <div class="connection-overlay" v-bind:class="{ offline: $store.state.Rpc.connected === false }"></div>
   </div>
 </template>
 
@@ -51,8 +51,10 @@ html, body, #app {
   min-width: 0;
 }
 .route .header {
-  padding-top: 0.5em;
   padding-left: 1em;
+  padding-top: 0.4em;
+  margin-bottom: 0.8em;
+  height: 3em;
 }
 .route .content {
   padding: 1em;

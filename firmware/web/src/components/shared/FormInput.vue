@@ -3,7 +3,7 @@
 Licensed under the MIT License. Refer to LICENSE file in the project root.
 -->
 <template>
-  <b-form-group :label="label" :label-for="id" :invalid-feedback="(required || model.length) ? valid : ''" :state="false" :required="required" horizontal>
+  <b-form-group :label="label" :label-for="id" :invalid-feedback="(required || model && model.length) ? valid : ''" :state="false" :required="required" horizontal>
     <b-form-input v-model="model" :id="id" :placeholder="placeholder" :readonly="readonly"/>
   </b-form-group>
 </template>
