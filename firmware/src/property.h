@@ -162,6 +162,9 @@ public:
     /// retrieve underlying value
     const T& value() const { return value_; }
 
+    /// deference to underlying value
+    const T* operator->() const { return &value_; }
+
     /////////////////////////////////////////////////////////////////////////
     /// assign new value
     void set(T new_value) {

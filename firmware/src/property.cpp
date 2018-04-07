@@ -22,7 +22,7 @@ Property::Property(PropertyNode* parent, String name, int flags)
 , flags_(flags)
 {
     if (parent) parent->addChild(*this);
-    setDirty();
+    for (auto it = this; it; it = it->parent_) it->flags_ |= (DIRTY | flags);
 }
 /// destructor
 Property::~Property() {
