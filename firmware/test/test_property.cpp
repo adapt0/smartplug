@@ -133,4 +133,83 @@ TEST_SUITE("Property") {
         // CHECK(toJson(root, Property::JSON_DIRTY) == R"({"parent":null})"); // removed
         // CHECK(false == root.dirty());
     }
+
+    /////////////////////////////////////////////////////////////////////////
+    TEST_CASE("toJson dirty persistence") {
+        PropertyNode root;
+        CHECK(toJson(root, Property::JSON_PERSIST) == R"({})"); // empty
+
+        PropertyNode prop_parent{ &root, "parent" };
+        PropertyInt prop_child1{ &prop_parent, "child1", 1 };
+        PropertyInt prop_child2{ &prop_parent, "child2", 2 };
+        CHECK(root.dirty());
+        CHECK(false == root.persistDirty());
+
+        // grabbing persistent properties does not clear dirty flag
+        CHECK(toJson(root, Property::JSON_PERSIST) == R"({})");
+        CHECK(root.dirty());
+        CHECK(false == root.persistDirty());
+
+        // retrieve dirty clears dirty
+        CHECK(toJson(root, Property::JSON_DIRTY) == R"({"parent":{"child1":1,"child2":2}})");
+        CHECK(false == root.dirty());
+        CHECK(false == root.persistDirty());
+
+        // setting persistent doesn't mark dirty
+        prop_child2.setPersist();
+        CHECK(false == root.dirty());
+        CHECK(false == root.persistDirty());
+
+        // can retrieve persisted nodes
+        CHECK(toJson(root, Property::JSON_PERSIST) == R"({"parent":{"child2":2}})");
+
+        // setting value marks dirty
+        prop_child2.set(-2);
+        CHECK(root.dirty());
+        CHECK(root.persistDirty());
+
+        // retrieve persisted clears persisted dirty
+        CHECK(toJson(root, Property::JSON_PERSIST) == R"({"parent":{"child2":-2}})");
+        CHECK(root.dirty());
+        CHECK(false == root.persistDirty());
+
+        CHECK(toJson(root, Property::JSON_DIRTY) == R"({"parent":{"child2":-2}})");
+        CHECK(false == root.dirty());
+        CHECK(false == root.persistDirty());
+
+
+        // add another persistent property
+        PropertyInt prop_child3{ &prop_parent, "child3", 3 };
+        prop_child3.setPersist();
+        CHECK(root.dirty());            // dirty because we added a new node
+        CHECK(false == root.persistDirty());
+
+        CHECK(toJson(root, Property::JSON_DIRTY) == R"({"parent":{"child3":3}})");
+        CHECK(false == root.dirty());
+        CHECK(false == root.persistDirty());
+
+        CHECK(toJson(root, Property::JSON_PERSIST) == R"({"parent":{"child2":-2,"child3":3}})");
+        CHECK(false == root.dirty());
+        CHECK(false == root.persistDirty());
+
+
+        // change non-persisted node
+        prop_child1.set(-1);
+        CHECK(root.dirty());
+        CHECK(false == root.persistDirty());
+        CHECK(toJson(root, Property::JSON_DIRTY) == R"({"parent":{"child1":-1}})");
+        CHECK(false == root.dirty());
+        CHECK(false == root.persistDirty());
+
+        // persisted node
+        prop_child3.set(-3);
+        CHECK(root.dirty());
+        CHECK(root.persistDirty());
+        CHECK(toJson(root, Property::JSON_DIRTY) == R"({"parent":{"child3":-3}})");
+        CHECK(false == root.dirty());
+        CHECK(root.persistDirty());
+        CHECK(toJson(root, Property::JSON_PERSIST) == R"({"parent":{"child2":-2,"child3":-3}})");
+        CHECK(false == root.dirty());
+        CHECK(false == root.persistDirty());
+    }
 }

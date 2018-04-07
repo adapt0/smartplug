@@ -40,12 +40,12 @@ public:
     // nonassignable
     Property& operator=(const Property&) = delete;
 
-
     // toJson flags
     enum JsonFlags {
-        JSON_DIRTY = 1 << 0,
+        JSON_DIRTY          = 1 << 0,   ///< this property or a child property has been modified
+        JSON_DIRTY_PERSIST  = 1 << 1,   ///< this property or a child persisted property has been modified
+        JSON_PERSIST        = 1 << 2,   ///< persist this property
     };
-
 
     /////////////////////////////////////////////////////////////////////////
     /// retrieve name
@@ -53,10 +53,17 @@ public:
 
     /////////////////////////////////////////////////////////////////////////
     /// dirty property? (property changed)
-    bool dirty() const { return dirty_; }
-    void markDirty();
-
+    bool dirty() const { return flags_ & JSON_DIRTY; }
+    void setDirty();
     virtual void clearDirty();
+
+    /// one or more persistent properties dirty?
+    bool persistDirty() const { return flags_ & JSON_DIRTY_PERSIST; }
+
+    /////////////////////////////////////////////////////////////////////////
+    /// persist property?
+    bool persist() const { return flags_ & JSON_PERSIST; }
+    void setPersist();
 
 protected:
     /////////////////////////////////////////////////////////////////////////
@@ -69,7 +76,7 @@ protected:
 
 private:
     const String    name_;                      ///< property name
-    bool            dirty_ = false;             ///< property has been modified
+    int             flags_ = 0;                 ///< associated flags
 
     PropertyNode*   parent_ = nullptr;          ///< our parent property
     Property*       siblingPrev_ = nullptr;     ///< previous sibling
@@ -101,9 +108,11 @@ public:
 
     void clearDirty() override;
 
+    void fromJson(const JsonVariant& json);
     JsonObject& toJson(JsonBuffer& buffer, int flags = 0);
 
 private:
+    void fromJson_(const JsonVariant& json) override;
     void toJson_(JsonObject& json, int flags) override;
     void jsonChildren_(JsonObject& json, int flags);
 
@@ -156,11 +165,17 @@ public:
     void set(T new_value) {
         if (value_ == new_value) return;
         value_ = new_value;
-        markDirty();
+        setDirty();
     }
 
 protected:
     /////////////////////////////////////////////////////////////////////////
+    /// process from JSON
+    void fromJson_(const JsonVariant& json) override {
+        if (json.is<T>()) {
+            value_ = json.as<T>();
+        }
+    }
     /// output JSON
     void toJson_(JsonObject& json, int /*flags*/) override {
         json.set(name().c_str(), value());
@@ -170,6 +185,24 @@ private:
     T   value_{};   ///< held value
 };
 
+
+/////////////////////////////////////////////////////////////////////////////
+/// specialize fromJson handling of IPAddress
+template <>
+inline void PropertyValueT<IPAddress>::fromJson_(const JsonVariant& json) {
+    if (json.is<const char*>()) {
+        value_.fromString(json.as<String>());
+    }
+}
+/// specialize fromJson handling of String
+template <>
+inline void PropertyValueT<String>::fromJson_(const JsonVariant& json) {
+    if (json.is<const char*>()) {
+        value_ = json.as<String>();
+    }
+}
+
+/////////////////////////////////////////////////////////////////////////////
 /// specialize toJson handling of IPAddress
 template <>
 inline void PropertyValueT<IPAddress>::toJson_(JsonObject& json, int /*flags*/) {

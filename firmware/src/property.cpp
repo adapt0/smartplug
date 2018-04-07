@@ -21,7 +21,7 @@ Property::Property(PropertyNode* parent, String name)
 : name_(std::move(name))
 {
     if (parent) parent->addChild(*this);
-    markDirty();
+    setDirty();
 }
 /// destructor
 Property::~Property() {
@@ -32,15 +32,20 @@ Property::~Property() {
 /////////////////////////////////////////////////////////////////////////////
 /// clear dirty
 void Property::clearDirty() {
-    dirty_ = false;
+    flags_ &= ~(JSON_DIRTY | JSON_DIRTY_PERSIST);
+}
+/// mark property (+ parents) as dirty
+void Property::setDirty() {
+    const int flags = JSON_DIRTY | (persist() ? JSON_DIRTY_PERSIST : 0);
+    for (auto it = this; it; it = it->parent_) it->flags_ |= flags;
 }
 
 /////////////////////////////////////////////////////////////////////////////
-/// mark property (+ parents) as dirty
-void Property::markDirty() {
-    dirty_ = true;
-    for (auto it = parent_; it; it = it->parent_) it->dirty_ = true;
+/// set properties (+ parents) persistence
+void Property::setPersist() {
+    for (auto it = this; it; it = it->parent_) it->flags_ |= JSON_PERSIST;
 }
+
 
 /////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
@@ -90,7 +95,8 @@ void PropertyNode::clearDirty() {
 /// visit our property nodes
 JsonObject& PropertyNode::toJson(JsonBuffer& buffer, int flags) {
     auto& obj = buffer.createObject();
-    if (flags & JSON_DIRTY && dirty_) dirty_ = false;
+    if ((flags & JSON_DIRTY)   && (flags_ & JSON_DIRTY)) flags_ &= ~JSON_DIRTY;
+    if ((flags & JSON_PERSIST) && (flags_ & JSON_DIRTY_PERSIST)) flags_ &= ~JSON_DIRTY_PERSIST;
     jsonChildren_(obj, flags);
     return obj;
 }
@@ -99,13 +105,19 @@ void PropertyNode::toJson_(JsonObject& json, int flags) {
     auto& obj = json.createNestedObject(name());
     jsonChildren_(obj, flags);
 }
-/// fill JSON with children
+/// populate JSON with children
 void PropertyNode::jsonChildren_(JsonObject& json, int flags) {
     for (auto child = childFirst_; child; child = child->siblingNext_) {
         // filter + clear dirty
         if (flags & JSON_DIRTY) {
-            if (!child->dirty_) continue;
-            child->dirty_ = false;
+            if (!child->dirty()) continue; // skip non-dirty nodes
+            child->flags_ &= ~JSON_DIRTY;
+        }
+
+        // filter persistent properties
+        if (flags & JSON_PERSIST) {
+            if (!child->persist()) continue; // skip non-persistent nodes
+            child->flags_ &= ~JSON_DIRTY_PERSIST;
         }
 
         //
