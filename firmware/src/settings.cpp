@@ -28,37 +28,55 @@ Settings::Settings()
 : propRelay_{ &propRoot_, "relay" }
 , propSys_{ &propRoot_, "sys" }
 , propSysNet_{ &propSys_, "net" }
-, propSysNetHostname_{ &propSysNet_, "hostname" }
-, propSysNetSsid_{ &propSysNet_, "ssid" }
-, propSysNetDhcp_{ &propSysNet_, "dhcp", true }
-, propSysNetIpv4_{ &propSysNet_ }
-, propSysNetCur_{ &propSysNet_, "cur" }
-, propSysNetCurIpv4_{ &propSysNetCur_ }
 , propTest_{ &propRoot_, "test" }
 , propTestInt_{ &propTest_, "int", 42 }
-, propPower_{ &propRoot_, "power" }
+, propPower_{ &propRoot_, "power", 0 }
 , propVersion_{ &propRoot_, "version", version::STRING }
 , propVersionGit_{ &propRoot_, "gitRev", version::GIT_REV }
-, propVoltage_{ &propRoot_, "voltage" }
+, propVoltage_{ &propRoot_, "voltage", 0 }
 { }
 
 /////////////////////////////////////////////////////////////////////////////
 void Settings::begin() {
-    lastMillis_ = millis();
+    lastMillisDirty_ = millis();
+    lastMillisPersist_ = millis();
 }
 
 /////////////////////////////////////////////////////////////////////////////
 void Settings::tick() {
     const auto now = millis();
-    if ((now - lastMillis_) < 100) return;
-    lastMillis_ = now;
 
     // process dirty properties
-    if (onDirtyProperties_ && propRoot_.dirty()) {
-        DynamicJsonBuffer buffer;
-        const auto& obj = propRoot_.toJson(buffer, Property::JSON_DIRTY);
-        onDirtyProperties_(obj, buffer);
+    if ((now - lastMillisDirty_) >= 100) {
+        lastMillisDirty_ = now;
+
+        if (onDirtyProperties_ && propRoot_.dirty()) {
+            DynamicJsonBuffer buffer;
+            const auto& obj = propRoot_.toJson(buffer, Property::DIRTY);
+            onDirtyProperties_(obj, buffer);
+        }
     }
+
+    // persist properties
+    if ((now - lastMillisPersist_) >= 2000) {
+        lastMillisPersist_ = now;
+
+        if (onPersistProperties_ && propRoot_.persistDirty()) {
+            printf("Saving properties...\r\n");
+            DynamicJsonBuffer buffer;
+            const auto& obj = propRoot_.toJson(buffer, Property::PERSIST);
+            onPersistProperties_(obj, buffer);
+        }
+    }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+/// load settings from JSON stream
+void Settings::loadFrom(Stream& config) {
+    DynamicJsonBuffer requestBuffer;
+    propRoot_.fromJson(
+        requestBuffer.parse(config)
+    );
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -119,10 +137,6 @@ auto Settings::methodNetwork_(const JsonVariant& params, JsonBuffer& /*buffer*/)
             if (dns2 && dns2[0] && !network->ipv4Dns2.fromString(dns2)) return Result{JsonRpcError::INVALID_PARAMS, "Invalid ipv4Dns2"};
         }
     }
-
-    // populate our properties with the updated settings
-    propSysNetDhcp_.set(dhcp || INADDR_NONE == network->ipv4Address);
-    if (!dhcp) propSysNetIpv4_.set(*network);
 
     // apply settings
     const bool res = !onNetwork_ || onNetwork_(std::move(network));

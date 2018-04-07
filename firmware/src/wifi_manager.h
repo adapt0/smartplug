@@ -10,6 +10,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 
 //- includes
 #include "settings.h"
+#include "property.h"
 #include <ESP8266WiFi.h>
 #include <functional>
 
@@ -20,11 +21,7 @@ public:
     using NetworkUPtr = Settings::NetworkUPtr;
     using OnConnected = std::function<void (const IPAddress&)>;
 
-    /////////////////////////////////////////////////////////////////////////
-    explicit WifiManager(Settings& settings, int pinLed = -1)
-    : settings_(settings)
-    , pinLed_(pinLed)
-    { }
+    explicit WifiManager(Settings& settings, int pinLed = -1);
 
     void begin();
     void tick();
@@ -55,13 +52,39 @@ private:
     void updateLed_();
     void updateNetworkSettings_();
 
-    Settings&   settings_;              ///< settings access
-    String      hostname_;              ///< our hostname
-    String      apPassword_;            ///< our AP's password
-    OnConnected onConnected_;           ///< on connected callback
-    NetworkUPtr networkToApply_;        ///< new network settings to apply
-    int         pinLed_ = -1;           ///< connectivity LED
-    bool        staConnected_ = false;  ///< is STA connected?
+    /////////////////////////////////////////////////////////////////////////
+    /// collection of IPv4 address properties
+    struct Ipv4Properties {
+        explicit Ipv4Properties(PropertyNode* parent, int flags = 0)
+        : address{ parent, "ipv4Address", IPAddress{}, flags }
+        , subnet{ parent, "ipv4Subnet", IPAddress{}, flags }
+        , gateway{ parent, "ipv4Gateway", IPAddress{}, flags }
+        , dns1{ parent, "ipv4Dns1", IPAddress{}, flags }
+        , dns2{ parent, "ipv4Dns2", IPAddress{}, flags }
+        { }
+
+        PropertyIpAddress   address;
+        PropertyIpAddress   subnet;
+        PropertyIpAddress   gateway;
+        PropertyIpAddress   dns1;
+        PropertyIpAddress   dns2;
+    };
+
+    Settings&       settings_;              ///< settings access
+
+    PropertyString  propSysNetHostname_;
+    PropertyString  propSysNetSsid_;
+    PropertyBool    propSysNetDhcp_;
+    Ipv4Properties  propSysNetIpv4_;
+    PropertyNode    propSysNetCur_;
+    Ipv4Properties  propSysNetCurIpv4_;
+
+    String          hostname_;              ///< our hostname
+    String          apPassword_;            ///< our AP's password
+    OnConnected     onConnected_;           ///< on connected callback
+    NetworkUPtr     networkToApply_;        ///< new network settings to apply
+    const int       pinLed_ = -1;           ///< connectivity LED
+    bool            staConnected_ = false;  ///< is STA connected?
 };
 
 #endif // INCLUDED__WIFIMANAGER

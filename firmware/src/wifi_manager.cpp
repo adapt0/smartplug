@@ -9,7 +9,20 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 
 //- includes
 #include "wifi_manager.h"
+#include "settings.h"
 #include <user_interface.h> // wifi_station_dhcpc_XXX
+
+/////////////////////////////////////////////////////////////////////////////
+WifiManager::WifiManager(Settings& settings, int pinLed)
+: settings_(settings)
+, propSysNetHostname_{ &settings.propSysNet(), "hostname", String{}, Property::PERSIST }
+, propSysNetSsid_{ &settings.propSysNet(), "ssid" }
+, propSysNetDhcp_{ &settings.propSysNet(), "dhcp", true, Property::PERSIST }
+, propSysNetIpv4_{ &settings.propSysNet(), Property::PERSIST }
+, propSysNetCur_{ &settings.propSysNet(), "cur" }
+, propSysNetCurIpv4_{ &propSysNetCur_ }
+, pinLed_(pinLed)
+{ }
 
 /////////////////////////////////////////////////////////////////////////////
 void WifiManager::begin() {
@@ -18,8 +31,27 @@ void WifiManager::begin() {
     hostname_ = "ESP8266-" + chipId;
     apPassword_ = chipId + chipId;
 
+    // restore/update persisted host name
+    if (propSysNetHostname_->length()) {
+        WiFi.hostname(propSysNetHostname_.value());
+    } else {
+        propSysNetHostname_.set(WiFi.hostname());
+    }
+
     // begin wifi (restores from SDKs stored settings)
     WiFi.begin();
+    propSysNetSsid_.set(WiFi.SSID());
+
+    // configure static
+    if (false == propSysNetDhcp_.value() && INADDR_NONE != propSysNetIpv4_.address.value()) {
+        WiFi.config(
+            propSysNetIpv4_.address.value(),
+            propSysNetIpv4_.gateway.value(),
+            propSysNetIpv4_.subnet.value(),
+            propSysNetIpv4_.dns1.value(),
+            propSysNetIpv4_.dns2.value()
+        );
+    }
 
     //
     updateNetworkSettings_();
@@ -112,20 +144,23 @@ void WifiManager::updateLed_() {
 /////////////////////////////////////////////////////////////////////////////
 /// notify Settings of network changes
 void WifiManager::updateNetworkSettings_() {
+    // const bool dhcp = (DHCP_STARTED == wifi_softap_dhcps_status());
+    // printf("dhcp %d\r\n", dhcp);
 
-    const bool dhcp = (DHCP_STARTED == wifi_softap_dhcps_status());
-    printf("dhcp %d\n", dhcp);
+    // populate our properties with the updated settings
+    // propSysNetDhcp_.set(dhcp || INADDR_NONE == network->ipv4Address);
+    // if (!dhcp) propSysNetIpv4_.set(*network);
 
-    settings_.updateNetwork(Settings::Network{
-        WiFi.hostname(),
-        WiFi.SSID(),
-        String{}, // password
-        WiFi.localIP(),
-        WiFi.subnetMask(),
-        WiFi.gatewayIP(),
-        WiFi.dnsIP(0),
-        WiFi.dnsIP(1)
-    });
+    // propSysNetHostname_.set(std::move(network.hostname));
+    // propSysNetSsid_.set(std::move(network.ssid));
+    // propSysNetCurIpv4_.set(network);
+
+    // update current IP
+    propSysNetCurIpv4_.address.set(WiFi.localIP());
+    propSysNetCurIpv4_.subnet.set(WiFi.subnetMask());
+    propSysNetCurIpv4_.gateway.set(WiFi.gatewayIP());
+    propSysNetCurIpv4_.dns1.set(WiFi.dnsIP(0));
+    propSysNetCurIpv4_.dns2.set(WiFi.dnsIP(1));
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -195,11 +230,22 @@ void WifiManager::tickApplyNetworkSettings_() {
     printf("Applying new network settings...\r\n");
 
     if (WIFI_STA != WiFi.getMode() || WiFi.SSID() != network->ssid || network->password.length() > 0) {
+        propSysNetSsid_.set(network->ssid);
         const auto res = WiFi.begin(network->ssid.c_str(), network->password.c_str());
         if (!res) printf("Failed to begin a new WiFi connection via WiFi.begin\r\n");
     }
 
+    // update hostname
+    {
+        propSysNetHostname_.set(network->hostname.length() ? network->hostname : hostname_);
+        if (propSysNetHostname_.value() != WiFi.hostname()) {
+            WiFi.hostname(propSysNetHostname_.value());
+        }
+    }
+
+    // IP settings
     if (INADDR_NONE == network->ipv4Address) {
+        propSysNetDhcp_.set(true);
         if (DHCP_STOPPED == wifi_station_dhcpc_status()) {
             if (!WiFi.config(0u, 0u, 0u)) printf("Failed to configure DHCP via WiFi.config\r\n");
             if (DHCP_STOPPED == wifi_station_dhcpc_status()) {
@@ -208,7 +254,20 @@ void WifiManager::tickApplyNetworkSettings_() {
             }
         }
     } else {
-        const auto res = WiFi.config(network->ipv4Address, network->ipv4Gateway, network->ipv4Subnet);
+        propSysNetDhcp_.set(false);
+        propSysNetIpv4_.address.set(network->ipv4Address);
+        propSysNetIpv4_.gateway.set(network->ipv4Gateway);
+        propSysNetIpv4_.subnet.set(network->ipv4Subnet);
+        propSysNetIpv4_.dns1.set(network->ipv4Dns1);
+        propSysNetIpv4_.dns2.set(network->ipv4Dns2);
+
+        const auto res = WiFi.config(
+            propSysNetIpv4_.address.value(),
+            propSysNetIpv4_.gateway.value(),
+            propSysNetIpv4_.subnet.value(),
+            propSysNetIpv4_.dns1.value(),
+            propSysNetIpv4_.dns2.value()
+        );
         if (!res) printf("Failed to set manual IP via WiFi.config\r\n");
     }
 }

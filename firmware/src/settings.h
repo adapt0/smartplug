@@ -14,6 +14,9 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 #include <functional>
 #include <memory>
 
+//- forwards
+class Stream;
+
 /// JSON-RPC error codes
 enum class JsonRpcError {
     NO_ERROR            = 0,        ///< indicates no error
@@ -46,8 +49,8 @@ public:
 
     /// response to method call
     using Result = std::pair<JsonRpcError, JsonVariant>;
-    /// callback for dirty property notifications
-    using FuncOnDirtyProperties = std::function<void (const JsonObject&, JsonBuffer& buffer)>;
+    /// callback for property notifications
+    using FuncOnProperties = std::function<void (const JsonObject&, JsonBuffer& buffer)>;
     /// callback on relay change
     using FuncOnRelay = std::function<void (bool)>;
     /// callback on network settings
@@ -57,6 +60,8 @@ public:
 
     void begin();
     void tick();
+
+    void loadFrom(Stream& config);
 
     /////////////////////////////////////////////////////////////////////////
     /// indicates device needs to be rebooted
@@ -72,9 +77,12 @@ public:
 
     /////////////////////////////////////////////////////////////////////////
     /// dirty properties
-    void onDirtyProperties(FuncOnDirtyProperties onDirtyProperties) {
-        propRoot_.clearDirty();
+    void onDirtyProperties(FuncOnProperties onDirtyProperties) {
         onDirtyProperties_ = std::move(onDirtyProperties);
+    }
+    /// persist properties
+    void onPersistProperties(FuncOnProperties onPersistProperties) {
+        onPersistProperties_ = std::move(onPersistProperties);
     }
     /// network settings
     void onNetwork(FuncOnNetwork onNetwork) {
@@ -86,12 +94,8 @@ public:
     }
 
     /////////////////////////////////////////////////////////////////////////
-    /// update network settings
-    void updateNetwork(Network&& network) {
-        propSysNetHostname_.set(std::move(network.hostname));
-        propSysNetSsid_.set(std::move(network.ssid));
-        propSysNetCurIpv4_.set(network);
-    }
+    /// sys.net
+    PropertyNode& propSysNet() { return propSysNet_; }
 
     Result call(const char* method, const JsonVariant& params, JsonBuffer& buffer);
 
@@ -112,45 +116,10 @@ private:
     Result methodState_(const JsonVariant& params, JsonBuffer& buffer);
     Result methodTest_(const JsonVariant& params, JsonBuffer& buffer);
 
-
-    /////////////////////////////////////////////////////////////////////////
-    /// collection of IPv4 address properties
-    struct Ipv4Properties {
-        explicit Ipv4Properties(PropertyNode* parent)
-        : address{ parent, "ipv4Address" }
-        , subnet{ parent, "ipv4Subnet" }
-        , gateway{ parent, "ipv4Gateway" }
-        , dns1{ parent, "ipv4Dns1" }
-        , dns2{ parent, "ipv4Dns2" }
-        { }
-
-        /// update properties from Network settings
-        void set(const Network& network) {
-            address.set(network.ipv4Address);
-            subnet.set(network.ipv4Subnet);
-            gateway.set(network.ipv4Gateway);
-            dns1.set(network.ipv4Dns1);
-            dns2.set(network.ipv4Dns2);
-        }
-
-        PropertyIpAddress   address;
-        PropertyIpAddress   subnet;
-        PropertyIpAddress   gateway;
-        PropertyIpAddress   dns1;
-        PropertyIpAddress   dns2;
-    };
-
-
     PropertyNode            propRoot_;
     PropertyBool            propRelay_;
     PropertyNode            propSys_;
     PropertyNode            propSysNet_;
-    PropertyString          propSysNetHostname_;
-    PropertyString          propSysNetSsid_;
-    PropertyBool            propSysNetDhcp_;
-    Ipv4Properties          propSysNetIpv4_;
-    PropertyNode            propSysNetCur_;
-    Ipv4Properties          propSysNetCurIpv4_;
     PropertyNode            propTest_;
     PropertyInt             propTestInt_;
     PropertyFloat           propPower_;
@@ -158,8 +127,10 @@ private:
     PropertyString          propVersionGit_;
     PropertyFloat           propVoltage_;
 
-    FuncOnDirtyProperties   onDirtyProperties_;     ///< on dirty property notification
-    unsigned long           lastMillis_{0};         ///< last dirty check
+    FuncOnProperties        onDirtyProperties_;     ///< on dirty property notification
+    FuncOnProperties        onPersistProperties_;   ///< on persist property
+    unsigned long           lastMillisDirty_{0};    ///< last dirty check
+    unsigned long           lastMillisPersist_{0};  ///< last persist check
 
     FuncOnNetwork           onNetwork_;             ///< on network settings
     FuncOnRelay             onRelay_;               ///< on relay

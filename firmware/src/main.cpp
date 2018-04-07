@@ -20,6 +20,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 #include <ESP8266mDNS.h>
 #include <FS.h>
 #include <Settings.h>
+#include <user_interface.h> // wifi_station_dhcpc_XXX
 
 //- globals
 namespace {
@@ -88,6 +89,7 @@ void cmdWifi(const char* argv[], int argc) {
         case WIFI_STA:
             printf("WIFI: STA\r\n");
             printf("Connected: %d\r\n", wifiManager.isConnected() ? 1 : 0);
+            printf("DHCP: %d\r\n", wifi_softap_dhcps_status());
             printf("IP: %s\r\n", wifiManager.ipAddress().toString().c_str());
             break;
         case WIFI_AP:
@@ -127,6 +129,25 @@ void cmdWifi(const char* argv[], int argc) {
 }
 
 /////////////////////////////////////////////////////////////////////////////
+/// load settings
+void loadSettings() {
+    if (!SPIFFS.begin()) {
+        printf("Failed to mount file system\r\n");
+        return;
+    }
+
+    //
+    File configFile = SPIFFS.open("/config.json", "r");
+    if (configFile) settings.loadFrom(configFile);
+
+    //
+    settings.onPersistProperties([](const JsonObject& obj, JsonBuffer& buffer) {
+        File configFile = SPIFFS.open("/config.json", "w");
+        if (configFile) obj.printTo(configFile);
+    });
+}
+
+/////////////////////////////////////////////////////////////////////////////
 /// initialization
 void setup() {
     Serial.begin(115200);
@@ -137,13 +158,9 @@ void setup() {
 
     //
     settings.begin();
+    loadSettings();
 
     //
-    if (!SPIFFS.begin()) {
-        printf("Failed to mount file system\r\n");
-        return;
-    }
-
     wifiManager.begin();
     wifiManager.attachConnected([](const IPAddress& /*ip*/) {
         MDNS.update();
