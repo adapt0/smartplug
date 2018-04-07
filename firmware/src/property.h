@@ -177,7 +177,7 @@ protected:
     /////////////////////////////////////////////////////////////////////////
     /// process from JSON
     void fromJson_(const JsonVariant& json) override {
-        value_ = json.as<T>();
+        if (json.success()) value_ = json.as<T>();
     }
     /// output JSON
     void toJson_(JsonObject& json, int /*flags*/) override {

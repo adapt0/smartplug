@@ -99,6 +99,7 @@ void PropertyNode::fromJson(const JsonVariant& json) {
 }
 /// load data from JSON
 void PropertyNode::fromJson_(const JsonVariant& json) {
+    if (!json.success()) return;
     for (auto child = childFirst_; child; child = child->siblingNext_) {
         if (child->persist()) {
             child->fromJson_( json[child->name()] );

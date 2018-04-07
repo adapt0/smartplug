@@ -269,5 +269,13 @@ TEST_SUITE("Property") {
         CHECK(toJson(prop_root) == R"({"parent":{"child1":-1,"child2":2}})");
         CHECK(false == prop_root.dirty());
         CHECK(false == prop_root.persistDirty());
+
+
+        // another property which is not mentioned in the loaded JSON
+        PropertyBool prop_childb{ &prop_parent, "bool", true, Property::PERSIST };
+
+        // load values
+        loadJson();
+        CHECK(toJson(prop_root) == R"({"parent":{"child1":-1,"child2":2,"bool":true}})");
     }
 }
