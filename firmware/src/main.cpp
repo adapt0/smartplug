@@ -44,6 +44,28 @@ void printVersion() {
 }
 
 /////////////////////////////////////////////////////////////////////////////
+/// cat file contents
+void cmdCat(const char* argv[], int argc) {
+    if (argc <= 0) {
+        printf("cat (filename)\r\n");
+        return;
+    }
+
+    File f = SPIFFS.open(argv[0], "r");
+    if (f) {
+        char buf[32];
+        for (int ofs = 0; ofs < f.size(); ) {
+            const auto tot = f.readBytes(buf, sizeof(buf));
+            if (tot <= 0) break;
+
+            Serial.write(buf, tot);
+            ofs += tot;
+        }
+        Serial.println();
+    } else {
+        printf("Failed to open file\r\n");
+    }
+}
 /// directory listing
 void cmdDir(const char*[], int) {
     Dir dir = SPIFFS.openDir("/");
@@ -183,6 +205,7 @@ void setup() {
 
     //
     static Console::Command commands[] = {
+        { "cat",     &cmdCat },
         { "dir",     &cmdDir },
         { "echo",    &cmdEcho },
         { "free",    &cmdFree },
