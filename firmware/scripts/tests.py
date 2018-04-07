@@ -44,6 +44,7 @@ doctest_path = os.path.join(projectlib_dir, 'doctest-1.2.7')
 test_env = Environment(
     CPPDEFINES=[
         'UNIT_TEST',
+        'ARDUINOJSON_ENABLE_ARDUINO_STREAM',
         'ARDUINOJSON_ENABLE_ARDUINO_STRING',
         'ICACHE_RODATA_ATTR=""',
     ],

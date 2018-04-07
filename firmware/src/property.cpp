@@ -17,8 +17,9 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 
 /////////////////////////////////////////////////////////////////////////////
 /// constructor
-Property::Property(PropertyNode* parent, String name)
+Property::Property(PropertyNode* parent, String name, int flags)
 : name_(std::move(name))
+, flags_(flags)
 {
     if (parent) parent->addChild(*this);
     setDirty();
@@ -32,18 +33,18 @@ Property::~Property() {
 /////////////////////////////////////////////////////////////////////////////
 /// clear dirty
 void Property::clearDirty() {
-    flags_ &= ~(JSON_DIRTY | JSON_DIRTY_PERSIST);
+    flags_ &= ~(DIRTY | DIRTY_PERSIST);
 }
 /// mark property (+ parents) as dirty
 void Property::setDirty() {
-    const int flags = JSON_DIRTY | (persist() ? JSON_DIRTY_PERSIST : 0);
+    const int flags = DIRTY | (persist() ? DIRTY_PERSIST : 0);
     for (auto it = this; it; it = it->parent_) it->flags_ |= flags;
 }
 
 /////////////////////////////////////////////////////////////////////////////
 /// set properties (+ parents) persistence
 void Property::setPersist() {
-    for (auto it = this; it; it = it->parent_) it->flags_ |= JSON_PERSIST;
+    for (auto it = this; it; it = it->parent_) it->flags_ |= PERSIST;
 }
 
 
@@ -92,11 +93,25 @@ void PropertyNode::clearDirty() {
 }
 
 /////////////////////////////////////////////////////////////////////////////
+/// load data from JSON
+void PropertyNode::fromJson(const JsonVariant& json) {
+    return fromJson_(json);
+}
+/// load data from JSON
+void PropertyNode::fromJson_(const JsonVariant& json) {
+    for (auto child = childFirst_; child; child = child->siblingNext_) {
+        if (child->persist()) {
+            child->fromJson_( json[child->name()] );
+        }
+    }
+}
+
+/////////////////////////////////////////////////////////////////////////////
 /// visit our property nodes
 JsonObject& PropertyNode::toJson(JsonBuffer& buffer, int flags) {
     auto& obj = buffer.createObject();
-    if ((flags & JSON_DIRTY)   && (flags_ & JSON_DIRTY)) flags_ &= ~JSON_DIRTY;
-    if ((flags & JSON_PERSIST) && (flags_ & JSON_DIRTY_PERSIST)) flags_ &= ~JSON_DIRTY_PERSIST;
+    if ((flags & DIRTY)   && (flags_ & DIRTY)) flags_ &= ~DIRTY;
+    if ((flags & PERSIST) && (flags_ & DIRTY_PERSIST)) flags_ &= ~DIRTY_PERSIST;
     jsonChildren_(obj, flags);
     return obj;
 }
@@ -109,15 +124,15 @@ void PropertyNode::toJson_(JsonObject& json, int flags) {
 void PropertyNode::jsonChildren_(JsonObject& json, int flags) {
     for (auto child = childFirst_; child; child = child->siblingNext_) {
         // filter + clear dirty
-        if (flags & JSON_DIRTY) {
+        if (flags & DIRTY) {
             if (!child->dirty()) continue; // skip non-dirty nodes
-            child->flags_ &= ~JSON_DIRTY;
+            child->flags_ &= ~DIRTY;
         }
 
         // filter persistent properties
-        if (flags & JSON_PERSIST) {
+        if (flags & PERSIST) {
             if (!child->persist()) continue; // skip non-persistent nodes
-            child->flags_ &= ~JSON_DIRTY_PERSIST;
+            child->flags_ &= ~DIRTY_PERSIST;
         }
 
         //

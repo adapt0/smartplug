@@ -40,11 +40,11 @@ public:
     // nonassignable
     Property& operator=(const Property&) = delete;
 
-    // toJson flags
-    enum JsonFlags {
-        JSON_DIRTY          = 1 << 0,   ///< this property or a child property has been modified
-        JSON_DIRTY_PERSIST  = 1 << 1,   ///< this property or a child persisted property has been modified
-        JSON_PERSIST        = 1 << 2,   ///< persist this property
+    // property flags
+    enum Flags {
+        DIRTY           = 1 << 0,   ///< this property or a child property has been modified
+        DIRTY_PERSIST   = 1 << 1,   ///< this property or a child persisted property has been modified
+        PERSIST         = 1 << 2,   ///< persist this property
     };
 
     /////////////////////////////////////////////////////////////////////////
@@ -53,24 +53,26 @@ public:
 
     /////////////////////////////////////////////////////////////////////////
     /// dirty property? (property changed)
-    bool dirty() const { return flags_ & JSON_DIRTY; }
+    bool dirty() const { return flags_ & DIRTY; }
     void setDirty();
     virtual void clearDirty();
 
     /// one or more persistent properties dirty?
-    bool persistDirty() const { return flags_ & JSON_DIRTY_PERSIST; }
+    bool persistDirty() const { return flags_ & DIRTY_PERSIST; }
 
     /////////////////////////////////////////////////////////////////////////
     /// persist property?
-    bool persist() const { return flags_ & JSON_PERSIST; }
+    bool persist() const { return flags_ & PERSIST; }
     void setPersist();
 
 protected:
     /////////////////////////////////////////////////////////////////////////
     /// constructor
-    explicit Property(PropertyNode* parent = nullptr, String name = String{});
+    explicit Property(PropertyNode* parent, String name, int flags = 0);
 
     /////////////////////////////////////////////////////////////////////////
+    /// load from JSON
+    virtual void fromJson_(const JsonVariant& json) = 0;
     /// convert to JSON
     virtual void toJson_(JsonObject& json, int flags) = 0;
 
@@ -149,8 +151,8 @@ class PropertyValueT : public Property {
 public:
     /////////////////////////////////////////////////////////////////////////
     /// constructor
-    PropertyValueT(PropertyNode* parent, String name, T value = T{})
-    : Property(parent, std::move(name))
+    PropertyValueT(PropertyNode* parent, String name, T value = T{}, int flags = 0)
+    : Property(parent, std::move(name), flags)
     , value_(value)
     { }
     /// destructor
@@ -172,9 +174,7 @@ protected:
     /////////////////////////////////////////////////////////////////////////
     /// process from JSON
     void fromJson_(const JsonVariant& json) override {
-        if (json.is<T>()) {
-            value_ = json.as<T>();
-        }
+        value_ = json.as<T>();
     }
     /// output JSON
     void toJson_(JsonObject& json, int /*flags*/) override {

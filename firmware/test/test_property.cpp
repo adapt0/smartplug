@@ -23,6 +23,21 @@ std::string toJson(PropertyNode& property, int flags = 0) {
 /////////////////////////////////////////////////////////////////////////////
 TEST_SUITE("Property") {
     /////////////////////////////////////////////////////////////////////////
+    TEST_CASE("Property") {
+        PropertyNode prop_root;
+        PropertyNode prop_parent{ &prop_root, "parent" };
+        PropertyInt prop_child1{ &prop_parent, "child1", 1 };
+        PropertyInt prop_child2{ &prop_parent, "child2", 2 };
+
+        CHECK(prop_root.name() == "");
+        CHECK(prop_parent.name() == "parent");
+        CHECK(prop_child1.name() == "child1");
+        CHECK(prop_child1.value() == 1);
+        CHECK(prop_child2.name() == "child2");
+        CHECK(prop_child2.value() == 2);
+    }
+
+    /////////////////////////////////////////////////////////////////////////
     TEST_CASE("toJson") {
         PropertyNode root;
         CHECK(String{} == root.name());
@@ -85,59 +100,59 @@ TEST_SUITE("Property") {
     TEST_CASE("toJson dirty") {
         PropertyNode root;
         CHECK(root.dirty());
-        CHECK(toJson(root, Property::JSON_DIRTY) == R"({})"); // empty
+        CHECK(toJson(root, Property::DIRTY) == R"({})"); // empty
         CHECK(false == root.dirty());
 
         {
             PropertyNode parent{ &root, "parent" };
             CHECK(root.dirty());
-            CHECK(toJson(root, Property::JSON_DIRTY) == R"({"parent":{}})");
+            CHECK(toJson(root, Property::DIRTY) == R"({"parent":{}})");
             CHECK(false == root.dirty());
-            CHECK(toJson(root, Property::JSON_DIRTY) == R"({})"); // no change
+            CHECK(toJson(root, Property::DIRTY) == R"({})"); // no change
             CHECK(false == root.dirty());
 
             PropertyInt child{ &parent, "child", 123 };
             CHECK(root.dirty());
-            CHECK(toJson(root, Property::JSON_DIRTY) == R"({"parent":{"child":123}})");
+            CHECK(toJson(root, Property::DIRTY) == R"({"parent":{"child":123}})");
             CHECK(false == root.dirty());
-            CHECK(toJson(root, Property::JSON_DIRTY) == R"({})"); // no changes
+            CHECK(toJson(root, Property::DIRTY) == R"({})"); // no changes
             CHECK(false == root.dirty());
 
             {
                 PropertyInt child2{ &parent, "child2", 234 };
                 CHECK(root.dirty());
-                CHECK(toJson(root, Property::JSON_DIRTY) == R"({"parent":{"child2":234}})");
-                CHECK(toJson(root, Property::JSON_DIRTY) == R"({})"); // no changes
+                CHECK(toJson(root, Property::DIRTY) == R"({"parent":{"child2":234}})");
+                CHECK(toJson(root, Property::DIRTY) == R"({})"); // no changes
                 CHECK(false == root.dirty());
 
                 child.set(345);
                 CHECK(root.dirty());
-                CHECK(toJson(root, Property::JSON_DIRTY) == R"({"parent":{"child":345}})");
+                CHECK(toJson(root, Property::DIRTY) == R"({"parent":{"child":345}})");
                 CHECK(false == root.dirty());
 
                 child.set(1);
                 child2.set(2);
                 CHECK(root.dirty());
-                CHECK(toJson(root, Property::JSON_DIRTY) == R"({"parent":{"child":1,"child2":2}})");
+                CHECK(toJson(root, Property::DIRTY) == R"({"parent":{"child":1,"child2":2}})");
                 CHECK(false == root.dirty());
             }
 
             // child2 removed
             // CHECK(root.dirty());
-            // CHECK(toJson(root, Property::JSON_DIRTY) == R"({"parent":{"child2":null}})"); // removed
+            // CHECK(toJson(root, Property::DIRTY) == R"({"parent":{"child2":null}})"); // removed
             // CHECK(false == root.dirty());
         }
 
         // parent + child removed
         // CHECK(root.dirty());
-        // CHECK(toJson(root, Property::JSON_DIRTY) == R"({"parent":null})"); // removed
+        // CHECK(toJson(root, Property::DIRTY) == R"({"parent":null})"); // removed
         // CHECK(false == root.dirty());
     }
 
     /////////////////////////////////////////////////////////////////////////
     TEST_CASE("toJson dirty persistence") {
         PropertyNode root;
-        CHECK(toJson(root, Property::JSON_PERSIST) == R"({})"); // empty
+        CHECK(toJson(root, Property::PERSIST) == R"({})"); // empty
 
         PropertyNode prop_parent{ &root, "parent" };
         PropertyInt prop_child1{ &prop_parent, "child1", 1 };
@@ -146,12 +161,12 @@ TEST_SUITE("Property") {
         CHECK(false == root.persistDirty());
 
         // grabbing persistent properties does not clear dirty flag
-        CHECK(toJson(root, Property::JSON_PERSIST) == R"({})");
+        CHECK(toJson(root, Property::PERSIST) == R"({})");
         CHECK(root.dirty());
         CHECK(false == root.persistDirty());
 
         // retrieve dirty clears dirty
-        CHECK(toJson(root, Property::JSON_DIRTY) == R"({"parent":{"child1":1,"child2":2}})");
+        CHECK(toJson(root, Property::DIRTY) == R"({"parent":{"child1":1,"child2":2}})");
         CHECK(false == root.dirty());
         CHECK(false == root.persistDirty());
 
@@ -161,7 +176,7 @@ TEST_SUITE("Property") {
         CHECK(false == root.persistDirty());
 
         // can retrieve persisted nodes
-        CHECK(toJson(root, Property::JSON_PERSIST) == R"({"parent":{"child2":2}})");
+        CHECK(toJson(root, Property::PERSIST) == R"({"parent":{"child2":2}})");
 
         // setting value marks dirty
         prop_child2.set(-2);
@@ -169,11 +184,11 @@ TEST_SUITE("Property") {
         CHECK(root.persistDirty());
 
         // retrieve persisted clears persisted dirty
-        CHECK(toJson(root, Property::JSON_PERSIST) == R"({"parent":{"child2":-2}})");
+        CHECK(toJson(root, Property::PERSIST) == R"({"parent":{"child2":-2}})");
         CHECK(root.dirty());
         CHECK(false == root.persistDirty());
 
-        CHECK(toJson(root, Property::JSON_DIRTY) == R"({"parent":{"child2":-2}})");
+        CHECK(toJson(root, Property::DIRTY) == R"({"parent":{"child2":-2}})");
         CHECK(false == root.dirty());
         CHECK(false == root.persistDirty());
 
@@ -184,11 +199,11 @@ TEST_SUITE("Property") {
         CHECK(root.dirty());            // dirty because we added a new node
         CHECK(false == root.persistDirty());
 
-        CHECK(toJson(root, Property::JSON_DIRTY) == R"({"parent":{"child3":3}})");
+        CHECK(toJson(root, Property::DIRTY) == R"({"parent":{"child3":3}})");
         CHECK(false == root.dirty());
         CHECK(false == root.persistDirty());
 
-        CHECK(toJson(root, Property::JSON_PERSIST) == R"({"parent":{"child2":-2,"child3":3}})");
+        CHECK(toJson(root, Property::PERSIST) == R"({"parent":{"child2":-2,"child3":3}})");
         CHECK(false == root.dirty());
         CHECK(false == root.persistDirty());
 
@@ -197,7 +212,7 @@ TEST_SUITE("Property") {
         prop_child1.set(-1);
         CHECK(root.dirty());
         CHECK(false == root.persistDirty());
-        CHECK(toJson(root, Property::JSON_DIRTY) == R"({"parent":{"child1":-1}})");
+        CHECK(toJson(root, Property::DIRTY) == R"({"parent":{"child1":-1}})");
         CHECK(false == root.dirty());
         CHECK(false == root.persistDirty());
 
@@ -205,11 +220,53 @@ TEST_SUITE("Property") {
         prop_child3.set(-3);
         CHECK(root.dirty());
         CHECK(root.persistDirty());
-        CHECK(toJson(root, Property::JSON_DIRTY) == R"({"parent":{"child3":-3}})");
+        CHECK(toJson(root, Property::DIRTY) == R"({"parent":{"child3":-3}})");
         CHECK(false == root.dirty());
         CHECK(root.persistDirty());
-        CHECK(toJson(root, Property::JSON_PERSIST) == R"({"parent":{"child2":-2,"child3":-3}})");
+        CHECK(toJson(root, Property::PERSIST) == R"({"parent":{"child2":-2,"child3":-3}})");
         CHECK(false == root.dirty());
         CHECK(false == root.persistDirty());
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+    TEST_CASE("loading persisted properties") {
+        PropertyNode prop_root;
+        PropertyNode prop_parent{ &prop_root, "parent" };
+        PropertyInt prop_child1{ &prop_parent, "child1", -1 };
+        PropertyInt prop_child2{ &prop_parent, "child2", -2 };
+
+        CHECK(toJson(prop_root, Property::DIRTY) == R"({"parent":{"child1":-1,"child2":-2}})");
+        CHECK(false == prop_root.dirty());
+        CHECK(false == prop_root.persistDirty());
+
+        auto loadJson = [&prop_root] {
+            DynamicJsonBuffer buffer;
+            auto& obj_root = buffer.createObject();
+            auto& obj_parent = obj_root.createNestedObject("parent");
+            obj_parent["child1"] = 1;
+            obj_parent["child2"] = 2;
+
+            prop_root.fromJson(obj_root);
+        };
+
+        // load values
+        loadJson();
+
+        // should not have changed as properties haven't been persisted
+        CHECK(toJson(prop_root) == R"({"parent":{"child1":-1,"child2":-2}})");
+        CHECK(false == prop_root.dirty());
+        CHECK(false == prop_root.persistDirty());
+
+
+        // persist child2
+        prop_child2.setPersist();
+        CHECK(false == prop_root.dirty());
+        CHECK(false == prop_root.persistDirty());
+
+        // load values (child2 should update)
+        loadJson();
+        CHECK(toJson(prop_root) == R"({"parent":{"child1":-1,"child2":2}})");
+        CHECK(false == prop_root.dirty());
+        CHECK(false == prop_root.persistDirty());
     }
 }
