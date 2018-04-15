@@ -11,9 +11,9 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
     </div>
     <template v-if="!itemCollapsed">
       <ul>
-        <template v-for="(v, k) in value">
-          <li :key=k v-if="v === null || typeof(v) !== 'object'"><icon name="square" /><span class="key">{{k}}:</span> <span class="value">{{v}}</span></li>
-          <li :key=k v-else><Tree :name=k :value=v :collapsed="collapsedChildren" /></li>
+        <template v-for="e in entries">
+          <li :key=e.key v-if="e.value === null || typeof(e.value) !== 'object'"><icon name="square" /><span class="key">{{e.key}}:</span> <span class="value">{{e.value}}</span></li>
+          <li :key=e.value v-else><Tree :name=e.key :value=e.value :collapsed="collapsedChildren" /></li>
         </template>
       </ul>
     </template>
@@ -48,6 +48,13 @@ export default {
     value: {
       type: Object,
       required: true
+    }
+  },
+  computed: {
+    entries () {
+      return Object.entries(this.value).map((e) => {
+        return { key: e[0], value: e[1] }
+      }).sort((lhs, rhs) => String(lhs.key).localeCompare(rhs.key))
     }
   },
   methods: {
