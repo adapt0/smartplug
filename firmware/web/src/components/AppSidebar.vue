@@ -4,15 +4,24 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
 -->
 <template>
   <div class="d-flex flex-column sidebar">
-    <div>
+    <b-nav vertical>
+      <b-nav-text><router-link to="/"><h5>SmartPlug</h5></router-link></b-nav-text>
+      <b-nav-item to="/home"><icon name="home"/>Home</b-nav-item>
+
+      <b-nav-item to="/settings"><icon name="cog"/>Settings</b-nav-item>
+
+    <router-link tag="div" to="/settings">
       <b-nav vertical>
-        <b-nav-text><router-link to="/"><h5>SmartPlug</h5></router-link></b-nav-text>
-        <b-nav-item to="home"><icon name="home"/>Home</b-nav-item>
-        <b-nav-item to="settings"><icon name="cog"/>Settings</b-nav-item>
-        <b-nav-item to="developer"><icon name="bug"/>Developer</b-nav-item>
-        <b-nav-item to="about"><icon name="info-circle"/>About</b-nav-item>
+        <b-nav-item to="/settings/general">General</b-nav-item>
+        <b-nav-item to="/settings/network">Network</b-nav-item>
+        <b-nav-item to="/settings/security">Security</b-nav-item>
+        <b-nav-item to="/settings/upgrade">Upgrade</b-nav-item>
       </b-nav>
-    </div>
+    </router-link>
+
+      <b-nav-item to="/developer"><icon name="bug"/>Developer</b-nav-item>
+      <b-nav-item to="/about"><icon name="info-circle"/>About</b-nav-item>
+    </b-nav>
     <div class="mt-auto text-center p-4">
       <bootstrap-toggle v-model="relay" :disabled="!$store.state.Rpc.connected"></bootstrap-toggle>
     </div>
@@ -81,6 +90,24 @@ export default {
 }
 .sidebar .nav-link.active {
   background-color: rgba(0, 0, 0, 0.05);
+}
+
+.sidebar .nav .nav .nav-link {
+  display: none;
+  font-weight: 1500;
+  font-size: 85%;
+  padding: 0.4rem 0 0.4rem 2.5rem;
+}
+.sidebar .nav .router-link-active .nav-link {
+  background-color: rgba(0, 0, 0, 0.05);
+  display: block;
+}
+.sidebar .nav .nav .nav-link.active {
+  background-color: rgba(0, 0, 0, 0.08);
+}
+
+.sidebar .nav-item .nav-link:hover {
+  background-color: rgba(0, 0, 0, 0.08);
 }
 
 .sidebar .nav-item .nav-link:hover .feather,

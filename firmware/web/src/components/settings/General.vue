@@ -3,24 +3,25 @@
 Licensed under the MIT License. Refer to LICENSE file in the project root.
 -->
 <template>
-  <div class="about">
+  <div class="network">
     <div class="header d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center">
-      <h1 class="h2">About</h1>
+      <h1 class="h2">General Settings</h1>
     </div>
     <div class="content">
-      <h5>SmartPlug {{$store.state.Rpc.data.version}}</h5>
       <ul>
-        <li>GitHub URL</li>
-        <li>Libraries</li>
+        <li>Button state persistence</li>
+        <li>Scheduling</li>
+        <li>Automated power cycling tests</li>
+        <li>Web log/console?</li>
+        <li>REST</li>
+        <li>Mesh?</li>
+        <li>Home automation interfacing</li>
       </ul>
     </div>
   </div>
 </template>
 
 <script>
-export default {
-  name: 'About'
-}
 </script>
 
 <style scoped>

@@ -53,7 +53,6 @@ html, body, #app {
 .route .header {
   padding-left: 1em;
   padding-top: 0.4em;
-  margin-bottom: 0.8em;
   height: 3em;
 }
 .route .content {

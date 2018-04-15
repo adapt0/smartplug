@@ -9,7 +9,10 @@ import Router from 'vue-router'
 import About from '@/components/About'
 import Developer from '@/components/Developer'
 import Home from '@/components/Home'
-import Settings from '@/components/Settings'
+import SettingsGeneral from '@/components/settings/General'
+import SettingsNetwork from '@/components/settings/Network'
+import SettingsSecurity from '@/components/settings/Security'
+import SettingsUpgrade from '@/components/settings/Upgrade'
 
 Vue.use(Router)
 
@@ -36,8 +39,23 @@ export default new Router({
     },
     {
       path: '/settings',
-      name: 'settings',
-      component: Settings
+      redirect: '/settings/general'
+    },
+    {
+      path: '/settings/general',
+      component: SettingsGeneral
+    },
+    {
+      path: '/settings/network',
+      component: SettingsNetwork
+    },
+    {
+      path: '/settings/security',
+      component: SettingsSecurity
+    },
+    {
+      path: '/settings/upgrade',
+      component: SettingsUpgrade
     }
   ]
 })

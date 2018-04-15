@@ -4,7 +4,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
 -->
 <template>
   <div class="index">
-    <div class="header d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center border-bottom">
+    <div class="header d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center">
       <h1 class="h2">Dashboard</h1>
       <b-button-toolbar key-nav>
         <b-button-group class="mr-2">
