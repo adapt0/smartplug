@@ -19,7 +19,6 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 class WifiManager {
 public:
     using NetworkUPtr = Settings::NetworkUPtr;
-    using OnConnected = std::function<void (const IPAddress&)>;
 
     explicit WifiManager(Settings& settings, int pinLed = -1);
 
@@ -27,7 +26,7 @@ public:
     void tick();
 
     /// our hostname
-    const String& hostname() const { return hostname_; }
+    String hostname() const { return WiFi.hostname(); }
 
     /// connected?
     bool isConnected() const { return staConnected_; }
@@ -39,11 +38,6 @@ public:
     void setModeAP();
     void setModeSTA();
     void setModeSTA(const char* ssid, const char* pass);
-
-    /// attach connected callback
-    void attachConnected(OnConnected onConnected) {
-        onConnected_ = std::move(onConnected);
-    }
 
 private:
     void disconnect_();
@@ -79,9 +73,8 @@ private:
     PropertyNode    propSysNetCur_;
     Ipv4Properties  propSysNetCurIpv4_;
 
-    String          hostname_;              ///< our hostname
+    String          apHostname_;            ///< our AP's hostname
     String          apPassword_;            ///< our AP's password
-    OnConnected     onConnected_;           ///< on connected callback
     NetworkUPtr     networkToApply_;        ///< new network settings to apply
     const int       pinLed_ = -1;           ///< connectivity LED
     bool            staConnected_ = false;  ///< is STA connected?

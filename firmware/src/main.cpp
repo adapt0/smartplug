@@ -17,7 +17,6 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 #include "version.h"
 #include "web_server.h"
 #include "wifi_manager.h"
-#include <ESP8266mDNS.h>
 #include <FS.h>
 #include <Settings.h>
 #include <user_interface.h> // wifi_station_dhcpc_XXX
@@ -184,9 +183,6 @@ void setup() {
 
     //
     wifiManager.begin();
-    wifiManager.attachConnected([](const IPAddress& /*ip*/) {
-        MDNS.update();
-    });
 
     smartPlug.begin();
 
@@ -198,9 +194,6 @@ void setup() {
     button.begin();
 
     //
-    MDNS.addService("http", "tcp", 80);
-    MDNS.begin(wifiManager.hostname().c_str());
-
     webServer.begin();
 
     //

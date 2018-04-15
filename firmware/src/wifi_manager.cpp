@@ -11,6 +11,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 #include "wifi_manager.h"
 #include "settings.h"
 #include "ssdp.h"
+#include <ESP8266mDNS.h> // mDNS
 #include <user_interface.h> // wifi_station_dhcpc_XXX
 
 /////////////////////////////////////////////////////////////////////////////
@@ -27,9 +28,9 @@ WifiManager::WifiManager(Settings& settings, int pinLed)
 
 /////////////////////////////////////////////////////////////////////////////
 void WifiManager::begin() {
-    // hostname includes chip id
+    // AP hostname includes chip id
     const String chipId{ESP.getChipId(), HEX};
-    hostname_ = "ESP8266-" + chipId;
+    apHostname_ = "ESP8266-" + chipId;
     apPassword_ = chipId + chipId;
 
     // restore/update persisted host name
@@ -68,6 +69,12 @@ void WifiManager::begin() {
         return onNetworkSettings_(std::move(network));
     });
 
+    // start mDNS
+    MDNS.addService("http", "tcp", 80);
+    if (!MDNS.begin(WiFi.hostname().c_str())) {
+        printf("mDNS failed to start\r\n");
+    }
+
     // start SSDP
     if (!SSDPExt::begin()) {
         printf("SSDP failed to start\r\n");
@@ -87,7 +94,6 @@ void WifiManager::tick() {
 
             if (connected) {
                 const auto ip = WiFi.localIP();
-                if (onConnected_) onConnected_(ip);
                 printf("WiFi Connected (IP: %s)\r\n", ip.toString().c_str());
                 updateNetworkSettings_();
 
@@ -95,6 +101,9 @@ void WifiManager::tick() {
                 if (!SSDP.begin()) {
                     printf("SSDP failed to start\r\n");
                 }
+
+                // update mDNS
+                MDNS.update();
 
             } else {
                 printf("WiFi Disconnected\r\n");
@@ -201,9 +210,9 @@ void WifiManager::setModeAP()  {
     WiFi.mode(WIFI_AP);
     WiFi.waitForConnectResult();
 
-    if (WiFi.softAP(hostname_.c_str(), apPassword_.c_str())) {
+    if (WiFi.softAP(apHostname_.c_str(), apPassword_.c_str())) {
         const auto ip = WiFi.softAPIP();
-        printf("AP '%s' (IP: %s)\r\n", hostname_.c_str(), ip.toString().c_str());
+        printf("AP '%s' (IP: %s)\r\n", apHostname_.c_str(), ip.toString().c_str());
     } else {
         printf("Failed to set AP mode\r\n");
     }
@@ -248,9 +257,13 @@ void WifiManager::tickApplyNetworkSettings_() {
 
     // update hostname
     {
-        propSysNetHostname_.set(network->hostname.length() ? network->hostname : hostname_);
+        //TODO: sanitize hostname
+        propSysNetHostname_.set(network->hostname.length() ? network->hostname : apHostname_);
         if (propSysNetHostname_.value() != WiFi.hostname()) {
             WiFi.hostname(propSysNetHostname_.value());
+            MDNS.setInstanceName(WiFi.hostname());
+            MDNS.begin(WiFi.hostname().c_str());
+            MDNS.notifyAPChange();
         }
     }
 
