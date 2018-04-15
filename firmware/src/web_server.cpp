@@ -10,6 +10,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 //- includes
 #include "web_server.h"
 #include "settings.h"
+#include "ssdp.h"
 #include "web_server_asset_handler.h"
 #include <ArduinoJson.h>
 
@@ -125,6 +126,11 @@ void WebServer::begin() {
             request->send(404);
         });
     }
+
+    // SSDP device profile
+    server_.on("/description.xml", HTTP_GET, [](AsyncWebServerRequest* request) {
+        SSDPExt::sendResponse(request);
+    });
 
     // static web asset handler
     server_.addHandler(new WebAssetHandler());

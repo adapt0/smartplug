@@ -10,6 +10,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 //- includes
 #include "wifi_manager.h"
 #include "settings.h"
+#include "ssdp.h"
 #include <user_interface.h> // wifi_station_dhcpc_XXX
 
 /////////////////////////////////////////////////////////////////////////////
@@ -66,6 +67,11 @@ void WifiManager::begin() {
     settings_.onNetwork([this](Settings::NetworkUPtr&& network) {
         return onNetworkSettings_(std::move(network));
     });
+
+    // start SSDP
+    if (!SSDPExt::begin()) {
+        printf("SSDP failed to start\r\n");
+    }
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -84,6 +90,11 @@ void WifiManager::tick() {
                 if (onConnected_) onConnected_(ip);
                 printf("WiFi Connected (IP: %s)\r\n", ip.toString().c_str());
                 updateNetworkSettings_();
+
+                // restart SSDP
+                if (!SSDP.begin()) {
+                    printf("SSDP failed to start\r\n");
+                }
 
             } else {
                 printf("WiFi Disconnected\r\n");
