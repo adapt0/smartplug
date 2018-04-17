@@ -12,8 +12,12 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
     <template v-if="!itemCollapsed">
       <ul>
         <template v-for="e in entries">
-          <li :key=e.key v-if="e.value === null || typeof(e.value) !== 'object'"><icon name="square" /><span class="key">{{e.key}}:</span> <span class="value">{{e.value}}</span></li>
-          <li :key=e.value v-else><Tree :name=e.key :value=e.value :collapsed="collapsedChildren" /></li>
+          <li :key=e.key v-if="e.value === null || typeof(e.value) !== 'object'">
+            <icon name="square" /><span class="key">{{e.key}}:</span> <span class="value">{{e.value}}</span>
+          </li>
+          <li :key=e.key v-else>
+            <Tree :name=e.key :value=e.value :collapsed="collapsedChildren" />
+          </li>
         </template>
       </ul>
     </template>
