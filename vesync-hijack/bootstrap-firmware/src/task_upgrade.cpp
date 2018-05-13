@@ -46,6 +46,9 @@ void TaskUpgrade::operator()() {
                 auto* addr = pkt.fromAddr();
                 if (startUpgrade_(addr)) break;
                 system_upgrade_flag_set(UPGRADE_FLAG_IDLE);
+
+                // wait a bit
+                vTaskDelay(5000 / portTICK_RATE_MS);
             }
         }
 
@@ -83,7 +86,6 @@ void TaskUpgrade::startNetwork_() {
 /////////////////////////////////////////////////////////////////////////////
 /// attempt to retrieve upgrade
 bool TaskUpgrade::startUpgrade_(const ip_addr* addr) {
-
     // determine where our irom lives
     const int iromAddr = (int)&_irom0_text_start;
     const int romBase  = 0x40200000;
@@ -93,6 +95,8 @@ bool TaskUpgrade::startUpgrade_(const ip_addr* addr) {
     const bool upgradeUser2 = (iromAddr < romUser2);
     const auto  romDest = (upgradeUser2) ? romUser2     : romBase;
     const auto* romName = (upgradeUser2) ? "/user2.bin" : "/firmware.bin";
+
+    printf("Requesting %s\n", romName);
 
     //
     HttpConnection http{addr, TaskUpgrade::HTTP_PORT};
@@ -121,6 +125,13 @@ bool TaskUpgrade::startUpgrade_(const ip_addr* addr) {
         // printf("erase sectors = %d\r\n", sectors);
         // printf("sectorOfs = %d\r\n", sectorOfs);
 
+        // sanity check that the image is going to fit
+        if (http.contentLength() > (romUser2 - romBase)) {
+            printf("Firmware image is too large!! (%d bytes)\n", http.contentLength());
+            return false;
+        }
+
+        //
         for (int i = 0; i < sectors; ++i) {
             printf("Erase sector %d\r\n", sectorOfs + i);
             if (SPI_FLASH_RESULT_OK != spi_flash_erase_sector(sectorOfs + i)) {
