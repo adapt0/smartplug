@@ -1,6 +1,6 @@
 # Internals
 
-Etekcity's outlet is comprised of three PCBs:
+Etekcity's outlet is internally comprised of three PCBs:
 
 1. AC + Relay
 2. AC/DC + HLW8012
@@ -41,13 +41,11 @@ Please be careful!
 
 ## Making contact
 
-Wonderful thing about hacking an ESP8266 is that all development can occur over a serial connection. Well, a serial connection and some way of putting the device into programming mode.
+Wonderful thing about hacking an ESP8266 is that all of the development can occur over a serial connection. Well, a serial connection and some way of putting the device into programming mode.
 
-For this you'll need a TTL 3V3 friendly 115200 serial interface. I've been using:
+For this you'll need a TTL 3V3 friendly 115200 serial interface. I've been using this [USB to TTL cable from Adafruit](https://www.adafruit.com/product/954).
 
-[adafruit TTL thing]
-
-Now we need to establish four wired connections to the ESP8266: TX, RX, GPIO0, and GND.
+So we need to establish four wired connections to the ESP8266: TX, RX, GPIO0, and GND.
 
 
 With the housing removed we have easy access to the "top" row of pins of the housing for the ESP8266. Better yet it turns out that all of the needed pins are on this "top" row!
@@ -56,9 +54,9 @@ With the housing removed we have easy access to the "top" row of pins of the hou
 | --------------------------- | ---------------------------------------- |
 | ![ESP12](esp12e-pinout.png) | ![ESW01-USA ESP12E pins](esw01-esp12e.jpg) |
 
-Typically I prefer to wire connections to a pin header which can be inserted into a bread board. Which allows for connections to be made/changed on the bread board without having to re-solder wires.
-
 Once these connections are in place the ESP8266 can be put into programming mode by temporarily grounding GPIO0 while booting the device.
+
+Typically I prefer to wire connections to a pin header which can be inserted into a bread board. This allows for connections to be made/changed on the bread board without having to re-solder wires.
 
 If you're crazy enough to power this up off of mains voltage without the cover. PLEASE BE CAREFUL. We've essentially exposed mains voltage wires here. Please treat it as such.
 
@@ -87,13 +85,13 @@ Place the device into programming mode by temporarily grounding GPIO0 during boo
 
 * [esptool.py](https://github.com/espressif/esptool) - ESP8266 and ESP32 serial bootloader utility
 
-Use the esptool script to dump the flash to a local file:
+Use the esptool Python script to dump the flash to a local file:
 
 ```
 ./esptool.py --port /dev/tty.usbserial read_flash 0 0x400000 etekcity.bin
 ```
 
-Procedure to restore from a dumped image:
+Here's the procedure to restore from a dumped image:
 
 ```
 ./esptool.py --port /dev/tty.usbserial write_flash 0x00000 etekcity.bin
@@ -107,6 +105,4 @@ With full programming access to the ESP8266 it is now trivial to load our own fi
 Recommend investigating the various OTA (Over The Air) upgrade solutions as playing with GPIO0 does get old fast.
 
 * [ESP8266 Arduino OTA](http://esp8266.github.io/Arduino/versions/2.0.0/doc/ota_updates/ota_updates.html)
-
-
 

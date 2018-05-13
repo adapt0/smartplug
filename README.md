@@ -20,7 +20,8 @@ Requires PlatformIO
 
 Used for loading custom firmware onto Etekcity outlets.
 
-[vesync-hijack/](vesync-hijack)
+* [vesync-hijack/](vesync-hijack/bootstrap-firmware/)
+* [vesync-hijack/bootstrap-firmware/](vesync-hijack/bootstrap-firmware/)
 
 
 ## Documentation

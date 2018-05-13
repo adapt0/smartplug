@@ -2,6 +2,8 @@
 
 Used for loading custom firmware onto Etekcity outlets.
 
+* [bootstrap-firmware](bootstrap-firmware/README.md)
+
 ## Compiling bootstrap firmware
 
 Compiling the bootstrap firmware (requires PlatformIO):
