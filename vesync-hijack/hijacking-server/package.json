@@ -15,6 +15,7 @@
   },
   "scripts": {
     "eslint": "eslint",
+    "start": "echo \"Try 'node ./index.js -p {wifipassword}'\"",
     "test": "eslint ."
   }
 }

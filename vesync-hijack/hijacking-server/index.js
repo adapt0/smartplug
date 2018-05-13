@@ -93,13 +93,15 @@ class VesyncHijack {
         // parse command line
         commander
             .version(this.version_)
+            .option('-s, --ssid <value>')
+            .option('-b, --bssid <value>')
             .option('-p, --password <value>')
             .parse(process.argv)
         ;
 
         // console.log('Retrieving WiFi settings');
-        await this.getNetworkInfo_(commander.password);
-        console.log(`Using SSID "${this.apSsid_}" (${this.ipAddress_})`);
+        await this.getNetworkInfo_(commander.ssid, commander.bssid, commander.password);
+        console.log(`Using SSID "${this.apSsid_}" (BSSID: ${this.apBssidStr_}, Local IP: ${this.ipAddress_})`);
 
         // listen for device UDP announcements, direct them to our web server
         const f1 = this.beginUdp_();
@@ -107,8 +109,8 @@ class VesyncHijack {
         // start our web server
         const f2 = this.beginHttpServer_();
 
-        // kick off smart config/air kiss (beginUdp_ must be called first)
-        console.log('Sending Air Kiss...');
+        // kick off Smart Config (beginUdp_ must be called first)
+        console.log('Sending Smart Config...');
         const f3 = this.beginAirKiss_();
 
         await Promise.all([f1, f2, f3]);
@@ -147,30 +149,56 @@ class VesyncHijack {
 
     /////////////////////////////////////////////////////////////////////////
     /// retrieve network information
-    async getNetworkInfo_(apPassword) {
-        // find local wifi device
-        const res = this.getWifiInfo_();
-        if (!res || !res.success) {
-            throw new Error('Failed to find WiFi interface');
-        }
-        // console.log(res, state);
-        if ('connected' !== (res.status || '').toLowerCase()) {
-            throw new Error(`WiFi '${res.interface} is disconnected?`);
-        }
-
-        // fill in SSID
-        this.apSsid_ = res.ssid;
-        this.apBssid_ = res.bssid.split(':').map(b => parseInt(b, 16));
+    async getNetworkInfo_(apSsid, apBssid, apPassword) {
+        // find first non-internal IPv4 interface 
+        const itf = (() => {
+            for (const [name, addresses] of Object.entries(os.networkInterfaces())) {
+                const f = addresses.find((addr) => (false === addr.internal && 'IPv4' === addr.family));
+                if (f) {
+                    f.name = name;
+                    return f;
+                }
+            }
+            return null;
+        })();
+        if (!itf) throw new Error('Failed to find our IP address');
 
         // AP password
         if (!apPassword) throw new Error('Need to specify your WiFi password (-p)');
         this.apPass_ = apPassword;
 
-        // retrieve network interface info
-        let itf = os.networkInterfaces()[res.interface];
-        if (!itf) throw new Error(`Not such network interface '${res.interface}'`);
-        itf = itf.find(i => 'IPv4' === i.family);
-        if (!itf) throw new Error(`Not such IPv4 network interface '${res.interface}'`);
+        //
+        if (apSsid && apBssid) {
+            // use provided wireless details
+            this.apSsid_ = apSsid;
+            this.apBssidStr_ = apBssid;
+        } else {
+            // find local wifi device
+            console.log("Looking for local WiFi interface (use --ssid & -bssid to override)");
+            const res = this.getWifiInfo_();
+            if (!res || !res.success) {
+                throw new Error('Failed to find WiFi interface');
+            }
+            // console.log(res, state);
+            if ('connected' !== (res.status || '').toLowerCase()) {
+                throw new Error(`WiFi '${res.interface} is disconnected?`);
+            }
+
+            if (apSsid && apSsid !== res.ssid) {
+                throw new Error(`Specified WiFi SSID "${apSsid}" doesn't match connected "${res.ssid}"?`);
+            }
+
+            // retrieve network interface info
+            // itf = os.networkInterfaces()[res.interface];
+            // if (!itf) throw new Error(`Not such network interface '${res.interface}'`);
+            // itf = itf.find(i => 'IPv4' === i.family);
+            // if (!itf) throw new Error(`Not such IPv4 network interface '${res.interface}'`);
+
+            // fill in SSID
+            this.apSsid_ = res.ssid;
+            this.apBssidStr_ = res.bssid;
+        }
+        this.apBssid_ = this.apBssidStr_.split(':').map(b => parseInt(b, 16));
 
         //
         this.ipAddress_ = itf.address;
@@ -179,7 +207,7 @@ class VesyncHijack {
     /////////////////////////////////////////////////////////////////////////
     /// begin listening for device UDP announcements
     async beginUdp_() {
-        // UDP socket for Air Kiss + new device announcements
+        // UDP socket for Smart Config + new device announcements
         this.udpSocket_ = dgram.createSocket('udp4');
         await new Promise((resolve) => {
             this.udpSocket_.bind(this.listenPort_, this.ipAddress_, resolve);
@@ -244,7 +272,7 @@ class VesyncHijack {
     }
 
     /////////////////////////////////////////////////////////////////////////
-    /// generate packet lengths for air kiss protocol
+    /// generate packet lengths for Smart Config protocol
     airKissPacketLengths_() {
         // https://github.com/EspressifApp/EsptouchForAndroid/blob/master/src/com/espressif/iot/esptouch/protocol/DatumCode.java
         // define by the Esptouch protocol, all of the datum code should add 1 at last to prevent 0
@@ -303,7 +331,7 @@ class VesyncHijack {
     }
 
     /////////////////////////////////////////////////////////////////////////
-    /// start sending out smart config/air kiss packets
+    /// start sending out Smart Config packets
     /// https://github.com/EspressifApp/EsptouchForAndroid/blob/master/src/com/espressif/iot/esptouch/task/EsptouchTaskParameter.java
     /// https://github.com/EspressifApp/EsptouchForAndroid/blob/master/src/com/espressif/iot/esptouch/task/__EsptouchTask.java
     async beginAirKiss_() {
