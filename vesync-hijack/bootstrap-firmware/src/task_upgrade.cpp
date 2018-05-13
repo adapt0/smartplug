@@ -34,12 +34,12 @@ void TaskUpgrade::operator()() {
         udp.bind(IP_ADDR_ANY, MCAST_PORT);
 
         while (true) {
-            printf("status: %d\r\n", wifi_station_get_connect_status());
+            // printf("status: %d\r\n", wifi_station_get_connect_status());
 
             auto pkt = udp.recv();
             if (!pkt) continue;
 
-// printf("UDP Packet! %d\n", pkt.length);
+            // printf("UDP Packet! %d\n", pkt.length);
 
             // expect packets to be filled with ones
             if (pkt.size() > 0 && '1' == pkt.data()[0]) {
@@ -60,12 +60,12 @@ void TaskUpgrade::startNetwork_() {
     station_config config;
     // if (wifi_station_get_config_default(&config)) {
     if (wifi_station_get_config(&config)) {
-printf("SSID: %s\r\n", config.ssid);
+        // printf("SSID: %s\r\n", config.ssid);
         if (!wifi_set_opmode_current(STATION_MODE)) {
             printf("Failed to set STATION mode :(\r\n");
         }
 
-printf("status: %d\r\n", wifi_station_get_connect_status());
+        // printf("status: %d\r\n", wifi_station_get_connect_status());
 
         wifi_station_connect();
     }
@@ -84,23 +84,10 @@ printf("status: %d\r\n", wifi_station_get_connect_status());
 /// attempt to retrieve upgrade
 bool TaskUpgrade::startUpgrade_(const ip_addr* addr) {
 
-// determine where our irom lives
-const int iromAddr = (int)&_irom0_text_start;
-printf("0x%x\r\n", iromAddr);
-
-const int romBase  = 0x40200000;
-const int romUser2 = 0x40281000;
-
-// if (iromAddr >= romUser2) {
-//     printf("We're running out of user2!\r\n");
-//     return false;
-// }
-
-if (system_upgrade_userbin_check() == UPGRADE_FW_BIN1) {
-    printf("user2.bin\r\n");
-} else if (system_upgrade_userbin_check() == UPGRADE_FW_BIN2) {
-    printf("user1.bin\r\n");
-}
+    // determine where our irom lives
+    const int iromAddr = (int)&_irom0_text_start;
+    const int romBase  = 0x40200000;
+    const int romUser2 = 0x40281000;
 
     // we need to be running out of user2
     const bool upgradeUser2 = (iromAddr < romUser2);
@@ -113,16 +100,17 @@ if (system_upgrade_userbin_check() == UPGRADE_FW_BIN1) {
         printf("Connection failed\n");
         return false;
     }
-printf(">> status = %d\r\n", http.statusCode());
+    // printf(">> status = %d\r\n", http.statusCode());
 
     if (200 != http.statusCode()) {
         printf("Unexpected status code %d\n", http.statusCode());
         return false;
     }
 
-printf(">> contentLength = %d\r\n", http.contentLength());
+    // printf(">> contentLength = %d\r\n", http.contentLength());
 
 
+    //
     system_upgrade_flag_set(UPGRADE_FLAG_START);
 
 
@@ -130,8 +118,8 @@ printf(">> contentLength = %d\r\n", http.contentLength());
     {
         const int sectors = (http.contentLength() + SPI_FLASH_SEC_SIZE - 1) / SPI_FLASH_SEC_SIZE;
         const int sectorOfs = (romDest - romBase) / SPI_FLASH_SEC_SIZE;
-printf("erase sectors = %d\r\n", sectors);
-printf("sectorOfs = %d\r\n", sectorOfs);
+        // printf("erase sectors = %d\r\n", sectors);
+        // printf("sectorOfs = %d\r\n", sectorOfs);
 
         for (int i = 0; i < sectors; ++i) {
             printf("Erase sector %d\r\n", sectorOfs + i);
@@ -173,18 +161,12 @@ printf("sectorOfs = %d\r\n", sectorOfs);
 
     printf("Write complete\r\n");
 
-// // if (upgrade_crc_check(system_get_fw_start_sec(), contentOfs) != true) {
-//     // printf("upgrade crc OK !\r\n");
-// // } else {
-//     // printf("upgrade crc check failed !\r\n");
-//     // system_upgrade_flag_set(UPGRADE_FLAG_IDLE);
-// // }
+    //TODO: could verify the CRC here
+    // we'll leave the boot loader to do it
 
     //
     system_upgrade_flag_set(UPGRADE_FLAG_FINISH);
     if (UPGRADE_FLAG_FINISH == system_upgrade_flag_check()) {
-//TODO: need to do a different reset for firmware.bin
-        // if (upgradeUser2)
         system_upgrade_reboot(); // if needed
     }
 

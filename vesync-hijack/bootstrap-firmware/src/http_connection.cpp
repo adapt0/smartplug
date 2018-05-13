@@ -98,7 +98,7 @@ err_t HttpConnection::retrieveHeaders_() {
                 if ('\r' == pktData[pktOfs] || '\n' == pktData[pktOfs]) {
                     state_ = State::HEADER;
                     headerValue[headerOfs++] = 0;
-printf("%s:%s\r\n", headerField, headerValue);
+                    // printf("%s:%s\r\n", headerField, headerValue);
 
                     if (0 == strcasecmp(headerField, "Content-Length")) {
                         contentLength_ = atoi(headerValue);
