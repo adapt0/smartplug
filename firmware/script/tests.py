@@ -79,7 +79,7 @@ def search_cpppaths(source):
         p = os.path.join(cpppath, source[0])
         if os.path.exists(p):
             return test_env.Object(p, **source[1])
-    return source_file
+    return source
 
 
 # minimal Arduino sources
