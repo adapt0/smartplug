@@ -43,12 +43,11 @@ Please be careful!
 
 Wonderful thing about hacking an ESP8266 is that all of the development can occur over a serial connection. Well, a serial connection and some way of putting the device into programming mode.
 
-For this you'll need a TTL 3V3 friendly 115200 serial interface. I've been using this [USB to TTL cable from Adafruit](https://www.adafruit.com/product/954).
+For this you'll need a TTL 3V3 friendly 115200 serial interface. I've been using a [USB to TTL cable from Adafruit](https://www.adafruit.com/product/954).
 
-So we need to establish four wired connections to the ESP8266: TX, RX, GPIO0, and GND.
+We'll need to establish four wired connections to the ESP8266: TX, RX, GPIO0, and GND.
 
-
-With the housing removed we have easy access to the "top" row of pins of the housing for the ESP8266. Better yet it turns out that all of the needed pins are on this "top" row!
+With the housing removed we have easy access to the "top" row of pins of the housing for the ESP8266. Which is super, as all of the needed pins are on this "top" row!
 
 | ESP12E pinout               | ESW01-USA                                |
 | --------------------------- | ---------------------------------------- |
@@ -62,7 +61,7 @@ If you're crazy enough to power this up off of mains voltage without the cover. 
 
 Serial settings are 115200 8N1.
 
-When booting normally, with the factory firmware, you should see something like:
+When booting normally (with the factory firmware) you should see something like:
 
 ```
 2.0.0(5a875ba)

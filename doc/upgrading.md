@@ -22,7 +22,7 @@ Smart Config is scary genius. It works by advertising a WiFi network's settings 
 * [How does TI CC3000 wifi smart config work?](https://electronics.stackexchange.com/questions/61704/how-does-ti-cc3000-wifi-smart-config-work)
 * [CC3000 Smart Config - transmitting SSID and keyphrase](http://depletionregion.blogspot.ch/2013/10/cc3000-smart-config-transmitting-ssid.html)
 
-Once the WiFi settings are known, the plug will connect to the advertised network, and begin announcing itself via UDP broadcasts on port 18266.
+Once the WiFi settings are known; the plug will connect to the advertised network, and begin announcing itself via UDP broadcasts on port 18266.
 
 ```
 0x1b + MAC + IP
@@ -30,7 +30,7 @@ Once the WiFi settings are known, the plug will connect to the advertised networ
 
 ## Begin Configuration
 
-On receiving a UDP announcement we can begin to establish a TCP connection on port 41234. This TCP connection only seems to respond to the `/beginConfigRequest` command. `beginConfigRequest` triggers the device to establish a WebSocket connection to the indicated web server on port 17273 with the path `/gnws`.
+On receiving a UDP announcement, we can begin to establish a TCP connection on port 41234. This TCP connection only seems to respond to the `/beginConfigRequest` command. `/beginConfigRequest` triggers the device to establish a WebSocket connection to the indicated web server on port 17273 with the path `/gnws`.
 
 ```
 // ... establish TCP connection ...
@@ -89,8 +89,8 @@ Device will then make an HTTP GET request for either `/upgrade/user1.bin` or `/u
 
 Taking this one step further. We can create some initial bootstrap images:
 
-* `user1.bin`/`user2.bin` - Our bootstrap firmware which requests `firmware.bin`, storing the image in an unused location within flash. Writes out some instructions for the eboot boot loader, then overwrites the boot loader in flash with the one from `firmware.bin`. Taking over the start of the flash area with our own environment.
-* `firmware.bin` - Custom firmare image
+* `user1.bin` & `user2.bin` - Our bootstrap firmware which requests `firmware.bin`. Stores that image in an unused location within flash. Writes out some instructions for the eboot boot loader, then overwrites the boot loader in flash with the eboot one from `firmware.bin`. Taking over the flash area with our own environment.
+* `firmware.bin` - Our custom firmware image
 
 See [vesync-hijack](../vesync-hijack/README.md) for usage + further technical details.
 

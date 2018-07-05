@@ -2,6 +2,8 @@
 
 Alternative firmware for Etekcity's "Voltson Wi-Fi Smart Plug Mini Outlet" (ESW01-USA).
 
+_WARNING: This is an experimental work in progress_
+
 ![Pair of Etekcity plugs](doc/etekcity.jpg)
 
 ## Projects
@@ -11,10 +13,8 @@ Alternative firmware for Etekcity's "Voltson Wi-Fi Smart Plug Mini Outlet" (ESW0
 Alternative firmware
 
 * Web interface
+* Powered by [PlatformIO](https://platformio.org/)
 
-Requires PlatformIO
-
-[Image file]
 
 ### vesync-hijack
 
