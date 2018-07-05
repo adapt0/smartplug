@@ -6,13 +6,13 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 
 import Vue from 'vue'
 import Router from 'vue-router'
-import About from '@/components/About'
-import Developer from '@/components/Developer'
-import Home from '@/components/Home'
-import SettingsGeneral from '@/components/settings/General'
-import SettingsNetwork from '@/components/settings/Network'
-import SettingsSecurity from '@/components/settings/Security'
-import SettingsUpgrade from '@/components/settings/Upgrade'
+import About from '@/views/About'
+import Developer from '@/views/Developer'
+import Home from '@/views/Home'
+import SettingsGeneral from '@/views/settings/General'
+import SettingsNetwork from '@/views/settings/Network'
+import SettingsSecurity from '@/views/settings/Security'
+import SettingsUpgrade from '@/views/settings/Upgrade'
 
 Vue.use(Router)
 

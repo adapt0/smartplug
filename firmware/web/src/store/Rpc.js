@@ -87,7 +87,8 @@ export default function (store) {
             ssid: 'ssid'
           }
         },
-        test: { }
+        test: { },
+        version: ''
       }
     },
     mutations: {

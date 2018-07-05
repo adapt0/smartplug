@@ -76,7 +76,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
 </template>
 
 <script>
-import FormInput from '@/components/shared/FormInput'
+import FormInput from '@/components/FormInput'
 
 export default {
   components: {

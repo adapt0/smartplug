@@ -35,6 +35,10 @@ const webpackConfig = merge(baseWebpackConfig, {
     new webpack.DefinePlugin({
       'process.env': env
     }),
+    // Ignore all locale files of moment.js
+    // https://github.com/jmblog/how-to-optimize-momentjs-with-webpack
+    new webpack.IgnorePlugin(/^\.\/locale$/, /moment$/),
+    // uglify
     new UglifyJsPlugin({
       uglifyOptions: {
         compress: {

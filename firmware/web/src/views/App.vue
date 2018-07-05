@@ -17,8 +17,8 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
 <script>
 import 'bootstrap/dist/css/bootstrap.css'
 import 'bootstrap-vue/dist/bootstrap-vue.css'
-import AppSidebar from '@/components/AppSidebar'
-import ConnectionAlert from '@/components/shared/ConnectionAlert'
+import AppSidebar from '@/views/AppSidebar'
+import ConnectionAlert from '@/components/ConnectionAlert'
 
 export default {
   name: 'App',
