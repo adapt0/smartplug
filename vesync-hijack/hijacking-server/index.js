@@ -164,7 +164,7 @@ class VesyncHijack {
         if (!itf) throw new Error('Failed to find our IP address');
 
         // AP password
-        if (!apPassword) throw new Error('Need to specify your WiFi password (-p)');
+        if (apPassword == null) throw new Error('Need to specify your WiFi password (-p)');
         this.apPass_ = apPassword;
 
         //

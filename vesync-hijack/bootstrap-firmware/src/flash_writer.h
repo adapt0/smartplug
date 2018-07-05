@@ -24,7 +24,7 @@ public:
     /////////////////////////////////////////////////////////////////////////
     /// constructor
     /// @param writeOfs Byte offset in flash to begin writing to
-    explicit FlashWriter(int writeOfs)
+    explicit FlashWriter(size_t writeOfs)
     : writeOfs_(writeOfs)
     {
         buffer_ = new uint32_t[bufferSize_ / sizeof(uint32_t)];
@@ -43,9 +43,9 @@ public:
     /// @param data Block of data to write
     /// @param dataLen Size of data to write
     /// @returns SPI_FLASH_RESULT_OK on success
-    SpiFlashOpResult spiWrite(const void* data, int dataLen) {
-        for (int ofs = 0; ofs < dataLen; ) {
-            const int len = std::min(dataLen - ofs, bufferSize_ - bufferOfs_);
+    SpiFlashOpResult spiWrite(const void* data, size_t dataLen) {
+        for (size_t ofs = 0; ofs < dataLen; ) {
+            const size_t len = std::min(dataLen - ofs, bufferSize_ - bufferOfs_);
 
             memcpy((uint8_t*)buffer_ + bufferOfs_, (const uint8_t*)data + ofs, len);
             bufferOfs_ += len;
@@ -61,7 +61,7 @@ public:
     /// Complete writing of data to flash
     /// @returns SPI_FLASH_RESULT_OK on success
     SpiFlashOpResult spiWriteFinal() {
-        if (0 == writeOfs_) return SPI_FLASH_RESULT_OK;
+        if (0 == bufferOfs_) return SPI_FLASH_RESULT_OK;
 
         // pad out remaining bytes
         memset((uint8_t*)buffer_ + bufferOfs_, 0xFF, bufferSize_ - bufferOfs_);
@@ -83,10 +83,10 @@ private:
         return SPI_FLASH_RESULT_OK;
     }
 
-    uint32_t*   buffer_ = nullptr;                  ///< temporary buffer (32 bit aligned)
-    const int   bufferSize_ = SPI_FLASH_SEC_SIZE;   ///< size (in bytes) of our buffer)
-    int         bufferOfs_ = 0;                     ///< byte offset into our buffer
-    int         writeOfs_ = 0;                      ///< offset we are writing to
+    uint32_t*       buffer_ = nullptr;                  ///< temporary buffer (32 bit aligned)
+    const size_t    bufferSize_ = SPI_FLASH_SEC_SIZE;   ///< size (in bytes) of our buffer)
+    size_t          bufferOfs_ = 0;                     ///< byte offset into our buffer
+    size_t          writeOfs_ = 0;                      ///< offset we are writing to
 };
 
 #endif // INCLUDED__FLASH_WRITER

@@ -89,8 +89,7 @@ Device will then make an HTTP GET request for either `/upgrade/user1.bin` or `/u
 
 Taking this one step further. We can create some initial bootstrap images:
 
-* `user1.bin` - Our first image which immediately requests/performs another upgrade with `user2.bin`. This is to ensure we are running from the second firmware partition.
-* `user2.bin` - Our second image which requests `firmware.bin` and overwrites the boot loader + first partition. Completely taking over the start of the flash area with our own environment.
+* `user1.bin`/`user2.bin` - Our bootstrap firmware which requests `firmware.bin`, storing the image in an unused location within flash. Writes out some instructions for the eboot boot loader, then overwrites the boot loader in flash with the one from `firmware.bin`. Taking over the start of the flash area with our own environment.
 * `firmware.bin` - Custom firmare image
 
 See [vesync-hijack](../vesync-hijack/README.md) for usage + further technical details.

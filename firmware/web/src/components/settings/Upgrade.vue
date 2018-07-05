@@ -50,7 +50,6 @@ export default {
       fileButton.type = 'file'
       fileButton.onchange = async () => {
         // sanity check file
-        console.log('fileButton', fileButton.files)
         const file = fileButton.files[0]
 
         // build up + submit form
@@ -59,12 +58,12 @@ export default {
         try {
           this.$refs.modalUpdate.show()
           this.updateInProgress = true
-          await this.$http.post('/api/v1/update', formData)
 
-          console.log('upload done')
+          // post
+          const promisePost = this.$http.post('/api/v1/update', formData)
 
           // wait for reconnect
-          await new Promise((resolve) => {
+          const promiseReconnect = new Promise((resolve) => {
             let unwatch = null
             let timerId = null
             const done = () => {
@@ -81,6 +80,10 @@ export default {
             )
             timerId = setTimeout(done, 30000)
           })
+
+          await Promise.race([
+            promisePost, promiseReconnect
+          ])
         } catch (e) {
           alert(e.statusText)
         } finally {
