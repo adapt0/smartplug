@@ -1,0 +1,23 @@
+{
+    "configurations": [
+        {
+            "name": "Mac",
+            "includePath": [
+                "${workspaceFolder}/firmware/.piolibdeps/**",
+                "${workspaceFolder}/firmware/src",
+                "${HOME}/.platformio/packages/framework-arduinoespressif8266/**",
+                "${HOME}/.platformio/packages/framework-arduinoespressif8266/tools/sdk/**"
+            ],
+            "defines": [],
+            "macFrameworkPath": [
+                "/System/Library/Frameworks",
+                "/Library/Frameworks"
+            ],
+            "compilerPath": "/usr/bin/clang",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "clang-x64"
+        }
+    ],
+    "version": 4
+}
