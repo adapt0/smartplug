@@ -22,6 +22,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
 </template>
 
 <script>
+export default { }
 </script>
 
 <style scoped>

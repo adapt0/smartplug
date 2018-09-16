@@ -29,7 +29,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
 </template>
 
 <script>
-import BootstrapToggle from '@/components/BootstrapToggle'
+import BootstrapToggle from '@/components/BootstrapToggle.vue'
 import 'vue-awesome/icons/bug'
 import 'vue-awesome/icons/cog'
 import 'vue-awesome/icons/home'

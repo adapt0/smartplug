@@ -29,7 +29,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
 </template>
 
 <script>
-import Tree from '@/components/Tree'
+import Tree from '@/components/Tree.vue'
 
 export default {
   components: {

@@ -29,7 +29,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
 </template>
 
 <script>
-import Chart from '@/components/chart'
+import Chart from '@/components/Chart.vue'
 
 export default {
   name: 'Home',

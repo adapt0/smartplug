@@ -31,7 +31,12 @@ GenerateSourcePlugin.prototype.apply = function(compiler) {
       varName = `asset${assets.length}__${varName}`
 
       // convert asset source to a C byte array
-      const source = zlib.gzipSync( Buffer.from(asset.source()) )
+      const source = zlib.gzipSync(
+        Buffer.from(asset.source()),
+        {
+          level: 9 // best compression
+        }
+      )
 
       let arrayData = ""
       for (let i = 0, len = source.length; i < len; ++i) {
