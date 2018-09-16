@@ -32,11 +32,14 @@ Wrap src/ code to skip in UNIT_TEST guards:
 import os
 import subprocess
 
-Import("env")
+Import("env", "projenv")
+
+# print env.Dump()
+# print projenv.Dump()
 
 # paths
-projectbuild_dir = os.path.join(env['PROJECTBUILD_DIR'], 'tests')
-projectlib_dir = os.path.join(env['PROJECT_DIR'], 'lib')
+projectbuild_dir = os.path.join(projenv['PROJECTBUILD_DIR'], 'tests')
+projectlib_dir = os.path.join(projenv['PROJECT_DIR'], 'lib')
 doctest_path = os.path.join(projectlib_dir, 'doctest-1.2.7')
 
 
@@ -49,18 +52,18 @@ test_env = Environment(
         'ICACHE_RODATA_ATTR=""',
     ],
     CPPPATH=[
-        # env['CPPPATH'],
+        # projenv['CPPPATH'],
         doctest_path,
     ],
-    CXXFLAGS=env['CXXFLAGS'],
-    PROJECT_DIR=env['PROJECT_DIR'],
-    PROJECTSRC_DIR=env['PROJECTSRC_DIR'],
-    PROJECTTEST_DIR=env['PROJECTTEST_DIR'],
+    CXXFLAGS=projenv['CXXFLAGS'],
+    PROJECT_DIR=projenv['PROJECT_DIR'],
+    PROJECTSRC_DIR=projenv['PROJECTSRC_DIR'],
+    PROJECTTEST_DIR=projenv['PROJECTTEST_DIR'],
 )
 
 test_env.Append(
     # ignore libc clobbering our system includes
-    CPPPATH = [p for p in env['CPPPATH'] if not '/libc/' in p],
+    CPPPATH = [p for p in projenv['CPPPATH'] if not '/libc/' in p],
     CCFLAGS = ['-g', '-ggdb'],
 )
 
@@ -75,7 +78,7 @@ test_env.Append(
 
 def search_cpppaths(source):
     """search CPPPATH for a source file"""
-    for cpppath in env['CPPPATH']:
+    for cpppath in projenv['CPPPATH']:
         p = os.path.join(cpppath, source[0])
         if os.path.exists(p):
             return test_env.Object(p, **source[1])
