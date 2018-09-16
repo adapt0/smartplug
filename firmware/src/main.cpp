@@ -53,7 +53,7 @@ void cmdCat(const char* argv[], int argc) {
     File f = SPIFFS.open(argv[0], "r");
     if (f) {
         char buf[32];
-        for (int ofs = 0; ofs < f.size(); ) {
+        for (size_t ofs = 0; ofs < f.size(); ) {
             const auto tot = f.readBytes(buf, sizeof(buf));
             if (tot <= 0) break;
 

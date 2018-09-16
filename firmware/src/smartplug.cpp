@@ -87,7 +87,7 @@ ICACHE_RAM_ATTR void SmartPlug::onFallingInterrupt_() {
     detachInterrupt(pulsePin);
     if (pulseWidth <= 0) return;
 
-    const int PWM_PERIOD = 1000000; // 1 hz
+//    const int PWM_PERIOD = 1000000; // 1 hz
 //    if (pulse_width > PWM_PERIOD) return;
 
     // fcf  = v1 * v2 * 48 / v2ref * fosc / 128

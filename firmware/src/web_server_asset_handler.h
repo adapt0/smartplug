@@ -39,13 +39,6 @@ public:
     /////////////////////////////////////////////////////////////////////////
     /// handle actual request
     void handleRequest(AsyncWebServerRequest* request) override final {
-        // look for matching asset
-        const auto fnd = std::equal_range(
-            webAssets, webAssets + webAssetsCount,
-            request->url(),
-            WebAssetPathCompare()
-        );
-
         const auto* asset = getAssetByPath_(request->url());
         if (asset) {
             auto* response = request->beginResponse_P(200, asset->mimeType, asset->data, asset->length);
