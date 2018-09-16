@@ -17,9 +17,12 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
   </div>
 </template>
 
-<script>
-export default { }
+<script lang="ts">
+import { Component, Vue } from 'vue-property-decorator';
+
+@Component
+export default class SettingsSecurity extends Vue { }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 </style>

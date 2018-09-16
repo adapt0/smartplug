@@ -33,69 +33,69 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
   </div>
 </template>
 
-<script>
-import 'vue-awesome/icons/spinner'
+<script lang="ts">
+import { Component, Vue } from 'vue-property-decorator';
+import { Modal } from 'bootstrap-vue';
+import 'vue-awesome/icons/spinner';
 
-export default {
-  data () {
-    return {
-      updateInProgress: false
-    }
-  },
-  methods: {
-    beginUpdate () {
-      // https://stackoverflow.com/questions/13688814/uploading-a-file-with-a-single-button
-      // https://github.com/pagekit/vue-resource/blob/master/docs/recipes.md#forms
-      const fileButton = document.createElement('input')
-      fileButton.type = 'file'
-      fileButton.onchange = async () => {
-        // sanity check file
-        const file = fileButton.files[0]
+@Component
+export default class SettingsUpgrade extends Vue {
+  public updateInProgress = false;
 
-        // build up + submit form
-        const formData = new FormData()
-        formData.append('file', file)
-        try {
-          this.$refs.modalUpdate.show()
-          this.updateInProgress = true
+  public beginUpdate() {
+    // https://stackoverflow.com/questions/13688814/uploading-a-file-with-a-single-button
+    // https://github.com/pagekit/vue-resource/blob/master/docs/recipes.md#forms
+    const fileButton = document.createElement('input');
+    fileButton.type = 'file';
+    fileButton.onchange = async () => {
+      // sanity check file
+      const file = fileButton.files && fileButton.files[0];
+      if (!file) { return; }
 
-          // post
-          const promisePost = this.$http.post('/api/v1/update', formData)
+      // build up + submit form
+      const formData = new FormData();
+      formData.append('file', file);
+      const eModalUpdate = (this.$refs.modalUpdate instanceof Vue) ? this.$refs.modalUpdate as Modal : undefined;
+      try {
+        if (eModalUpdate) { eModalUpdate.show(); }
+        this.updateInProgress = true;
 
-          // wait for reconnect
-          const promiseReconnect = new Promise((resolve) => {
-            let unwatch = null
-            let timerId = null
-            const done = () => {
-              if (timerId) { clearTimeout(timerId); timerId = null }
-              if (unwatch) { unwatch(); unwatch = null }
-              resolve()
-            }
+        // post
+        const promisePost = this.$http.post('/api/v1/update', formData);
 
-            unwatch = this.$store.watch(
-              (state) => this.$store.state.Rpc.connected,
-              (newValue, oldValue) => {
-                if (!oldValue && newValue) done()
-              }
-            )
-            timerId = setTimeout(done, 30000)
-          })
+        // wait for reconnect
+        const promiseReconnect = new Promise((resolve) => {
+          let unwatch: (() => void) | undefined;
+          let timerId: NodeJS.Timer | undefined;
+          const done = () => {
+            if (timerId) { clearTimeout(timerId); timerId = undefined; }
+            if (unwatch) { unwatch(); unwatch = undefined; }
+            resolve();
+          };
 
-          await Promise.race([
-            promisePost, promiseReconnect
-          ])
-        } catch (e) {
-          alert(e.statusText)
-        } finally {
-          this.$refs.modalUpdate.hide()
-          this.updateInProgress = false
-        }
+          unwatch = this.$store.watch(
+            (state) => this.$store.state.Rpc.connected,
+            (newValue, oldValue) => {
+              if (!oldValue && newValue) { done(); }
+            },
+          );
+          timerId = setTimeout(done, 30000);
+        });
+
+        await Promise.race([
+          promisePost, promiseReconnect,
+        ]);
+      } catch (e) {
+        alert(e.statusText);
+      } finally {
+        if (eModalUpdate) { eModalUpdate.hide(); }
+        this.updateInProgress = false;
       }
+    };
 
-      document.body.append(fileButton)
-      fileButton.click()
-      fileButton.remove()
-    }
+    document.body.appendChild(fileButton);
+    fileButton.click();
+    fileButton.remove();
   }
 }
 </script>

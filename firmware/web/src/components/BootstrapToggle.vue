@@ -7,7 +7,7 @@ Licensed under MIT
 Licensed under the MIT License. Refer to LICENSE file in the project root.
 -->
 <template>
-  <div class="toggle btn btn-default" v-bind:class="{ off: !value, disabled }" style="width: 70px; height: 38px;" v-on:click="toggle">
+  <div class="toggle btn btn-default" :class="{ off: !value, disabled }" style="width: 70px; height: 38px;" v-on:click="toggle">
     <input type="checkbox">
     <div class="toggle-group">
       <label class="btn btn-primary toggle-on">{{onValue}}</label>
@@ -17,37 +17,25 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
   </div>
 </template>
 
-<script>
-export default {
-  props: {
-    value: {
-      type: Boolean,
-      default: false
-    },
-    disabled: {
-      type: Boolean,
-      default: false
-    },
-    onValue: {
-      type: String,
-      default: 'On'
-    },
-    offValue: {
-      type: String,
-      default: 'Off'
-    }
-  },
-  methods: {
-    toggle () {
-      if (!this.disabled) {
-        this.$emit('input', !this.value)
-      }
+<script lang="ts">
+import { Component, Prop, Vue } from 'vue-property-decorator';
+
+@Component
+export default class BootstrapToggle extends Vue {
+  @Prop({ type: Boolean, default: false }) public value!: boolean;
+  @Prop({ type: Boolean, default: false }) public disabled!: boolean;
+  @Prop({ type: String, default: 'On' }) public onValue!: string;
+  @Prop({ type: String, default: 'Off' }) public offValue!: string;
+
+  public toggle() {
+    if (!this.disabled) {
+      this.$emit('input', !this.value);
     }
   }
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 /*! ========================================================================
  * Bootstrap Toggle: bootstrap2-toggle.css v2.2.0
  * http://www.bootstraptoggle.com

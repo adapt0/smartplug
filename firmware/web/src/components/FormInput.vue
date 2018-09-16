@@ -8,37 +8,35 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
   </b-form-group>
 </template>
 
-<script>
-export default {
-  props: {
-    id: { type: String },
-    label: { type: String },
-    value: { type: String },
-    pattern: { type: String },
-    invalidMessage: { type: String },
-    placeholder: { type: String },
-    readonly: { type: Boolean, default: false },
-    required: { type: Boolean, default: false }
-  },
-  computed: {
-    model: {
-      get () {
-        return this.value
-      },
-      set (newValue) {
-        this.$emit('input', newValue)
-      }
-    },
-    rePattern () {
-      return new RegExp(this.pattern)
-    },
-    valid () {
-      if (this.rePattern.test(this.model)) return ''
-      return this.invalidMessage
-    }
+<script lang="ts">
+import { Component, Prop, Vue } from 'vue-property-decorator';
+
+@Component
+export default class FormInput extends Vue {
+  @Prop(String) public id!: string;
+  @Prop(String) public label!: string;
+  @Prop(String) public value!: string;
+  @Prop(String) public pattern!: string;
+  @Prop(String) public invalidMessage!: string;
+  @Prop(String) public placeholder!: string;
+  @Prop({ type: Boolean, default: false }) public readonly!: boolean;
+  @Prop({ type: Boolean, default: false }) public required!: boolean;
+
+  get model() {
+    return this.value;
+  }
+  set model(newValue) {
+    this.$emit('input', newValue);
+  }
+  get rePattern() {
+    return new RegExp(this.pattern);
+  }
+  get valid() {
+    if (this.rePattern.test(this.model)) { return ''; }
+    return this.invalidMessage;
   }
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 </style>

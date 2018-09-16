@@ -28,15 +28,13 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
   </div>
 </template>
 
-<script>
-import Tree from '@/components/Tree.vue'
+<script lang="ts">
+import { Component, Vue } from 'vue-property-decorator';
+import Tree from '@/components/Tree.vue';
 
-export default {
-  components: {
-    Tree
-  }
-}
+@Component({ components: { Tree } })
+export default class Developer extends Vue { }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 </style>

@@ -6,8 +6,8 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
 -->
 <template>
   <div class="tree">
-    <div class="collapsable" v-on:click="toggle">
-      <icon v-bind:name="(itemCollapsed) ? 'caret-right' : 'caret-down'"/><span class="key">{{name}}</span>
+    <div class="collapsable" @click="toggle">
+      <icon :name="(itemCollapsed) ? 'caret-right' : 'caret-down'"/><span class="key">{{name}}</span>
     </div>
     <template v-if="!itemCollapsed">
       <ul>
@@ -24,52 +24,40 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
   </div>
 </template>
 
-<script>
-import 'vue-awesome/icons/caret-down'
-import 'vue-awesome/icons/caret-right'
-import 'vue-awesome/icons/square'
+<script lang="ts">
+import { Component, Prop, Vue } from 'vue-property-decorator';
+import 'vue-awesome/icons/caret-down';
+import 'vue-awesome/icons/caret-right';
+import 'vue-awesome/icons/square';
 
-export default {
-  name: 'Tree',
-  data () {
-    return {
-      itemCollapsed: this.collapsed
-    }
-  },
-  props: {
-    collapsed: {
-      type: Boolean,
-      default: false
-    },
-    collapsedChildren: {
-      type: Boolean,
-      default: true
-    },
-    name: {
-      type: String,
-      default: 'root'
-    },
-    value: {
-      type: Object,
-      required: true
-    }
-  },
-  computed: {
-    entries () {
-      return Object.entries(this.value).map((e) => {
-        return { key: e[0], value: e[1] }
-      }).sort((lhs, rhs) => String(lhs.key).localeCompare(rhs.key))
-    }
-  },
-  methods: {
-    toggle () {
-      this.itemCollapsed = !this.itemCollapsed
-    }
+@Component({ name: 'Tree' })
+export default class Tree extends Vue {
+  @Prop({ type: Boolean, default: false }) public collapsed!: boolean;
+  @Prop({ type: Boolean, default: true }) public collapsedChildren!: boolean;
+  @Prop({ type: String, default: 'root' }) public name!: string;
+  @Prop({ type: Object, required: true }) public value!: any;
+
+  public itemCollapsed = true;
+
+  public mounted() {
+    this.itemCollapsed = this.collapsed;
+  }
+
+  get entries() {
+    if (this.itemCollapsed) { return []; }
+
+    return Object.entries(this.value).map((e) => {
+      return { key: e[0], value: e[1] };
+    }).sort((lhs, rhs) => String(lhs.key).localeCompare(rhs.key));
+  }
+
+  public toggle() {
+    this.itemCollapsed = !this.itemCollapsed;
   }
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 ul {
   padding-left: 14px;
 }
@@ -87,8 +75,6 @@ div.collapsable {
 span.key {
   color: #222;
   font-weight: bold;
-}
-span.value {
 }
 
 .fa-icon {

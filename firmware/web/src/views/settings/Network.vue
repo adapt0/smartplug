@@ -67,7 +67,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
                         invalidMessage='Please enter a DNS address' />
             </element>
           </b-form-group>
-          <b-alert variant="danger" :show="formAlert">{{formAlert}}</b-alert>
+          <b-alert variant="danger" :show="false !== formAlert">{{formAlert}}</b-alert>
           <b-button type="submit" variant="primary" class="mt-2">Submit</b-button>
         </fieldset>
       </b-form>
@@ -75,68 +75,68 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
   </div>
 </template>
 
-<script>
-import FormInput from '@/components/FormInput.vue'
+<script lang="ts">
+import { Component, Vue, Watch } from 'vue-property-decorator';
+import FormInput from '@/components/FormInput.vue';
 
-export default {
-  components: {
-    FormInput
-  },
-  data () {
+@Component({ components: { FormInput } })
+export default class SettingsNetwork extends Vue {
+
+  get rpcConnected() {
+    return this.$store.state.Rpc.connected;
+  }
+  public dhcpOptions = [
+    { value: true, text: 'Using DHCP' },
+    { value: false, text: 'Manually' },
+  ];
+
+  public form: any = {};
+  public formAlert: string | false = false;
+  public formDisabled = false;
+
+  public mounted() {
+    this.form = this.fillForm_();
+  }
+
+  /// submit network settings
+  public async onNetworkSubmit(evt: Event) {
+    evt.preventDefault();
+    try {
+      this.formDisabled = true;
+      const res = await this.$store.dispatch('Rpc/network', this.form);
+      if (!res) { throw new Error('Failed to apply network settings'); }
+      this.formAlert = false;
+    } catch (e) {
+      this.formAlert = `Error: ${e && e.message}`;
+    } finally {
+      this.formDisabled = false;
+    }
+  }
+
+  @Watch('rpcConnected')
+  public onRpcConnected(connected: boolean) {
+    // pick up settings on connection
+    if (connected) { Object.assign(this.form, this.fillForm_()); }
+  }
+
+  private fillForm_() {
+    const net = this.$store.state.Rpc.data.sys.net;
     return {
-      dhcpOptions: [
-        { value: true, text: 'Using DHCP' },
-        { value: false, text: 'Manually' }
-      ],
-      form: this.fillForm_(),
-      formAlert: false,
-      formDisabled: false
-    }
-  },
-  computed: {
-    rpcConnected () {
-      return this.$store.state.Rpc.connected
-    }
-  },
-  methods: {
-    fillForm_ () {
-      const net = this.$store.state.Rpc.data.sys.net
-      return {
-        dhcp: net.dhcp,
-        hostname: net.hostname,
-        ssid: net.ssid,
-        password: '',
-        ipv4Address: net.ipv4Address,
-        ipv4Subnet: net.ipv4Subnet,
-        ipv4Gateway: net.ipv4Gateway,
-        ipv4Dns1: net.ipv4Dns1,
-        ipv4Dns2: net.ipv4Dns2
-      }
-    },
-    /// submit network settings
-    async onNetworkSubmit (evt) {
-      evt.preventDefault()
-      try {
-        this.formDisabled = true
-        const res = await this.$store.dispatch('Rpc/network', this.form)
-        console.log('res', res)
-      } catch (e) {
-        this.formAlert = `Error: ${e && e.message}`
-      } finally {
-        this.formDisabled = false
-      }
-    }
-  },
-  watch: {
-    rpcConnected (connected) {
-      // pick up settings on connection
-      if (connected) Object.assign(this.form, this.fillForm_())
-    }
+      dhcp: net.dhcp,
+      hostname: net.hostname,
+      ssid: net.ssid,
+      password: '',
+      ipv4Address: net.ipv4Address,
+      ipv4Subnet: net.ipv4Subnet,
+      ipv4Gateway: net.ipv4Gateway,
+      ipv4Dns1: net.ipv4Dns1,
+      ipv4Dns2: net.ipv4Dns2,
+    };
   }
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 form {
   max-width: 640px;
 }

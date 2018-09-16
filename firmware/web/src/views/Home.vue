@@ -28,16 +28,13 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
   </div>
 </template>
 
-<script>
-import Chart from '@/components/Chart.vue'
+<script lang="ts">
+import { Component, Vue } from 'vue-property-decorator';
+import Chart from '@/components/Chart.vue';
 
-export default {
-  name: 'Home',
-  components: {
-    Chart
-  }
-}
+@Component({ components: { Chart } })
+export default class Home extends Vue { }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 </style>

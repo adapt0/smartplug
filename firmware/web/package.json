@@ -6,9 +6,9 @@
     "start": "vue-cli-service serve",
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint",
+    "lint": "vue-cli-service lint --no-fix",
     "test:unit": "vue-cli-service test:unit",
-    "test": "vue-cli-service test:unit"
+    "test": "npm run lint && npm run test:unit"
   },
   "dependencies": {
     "bootstrap-vue": "^2.0.0-rc.11",
@@ -26,6 +26,7 @@
     "@types/chai": "^4.1.0",
     "@types/mocha": "^5.2.4",
     "@vue/cli-plugin-babel": "^3.0.3",
+    "@vue/cli-plugin-typescript": "^3.0.3",
     "@vue/cli-plugin-unit-mocha": "^3.0.3",
     "@vue/cli-service": "^3.0.3",
     "@vue/test-utils": "^1.0.0-beta.20",
@@ -33,6 +34,7 @@
     "compression-webpack-plugin": "^2.0.0",
     "node-sass": "^4.9.0",
     "sass-loader": "^7.0.1",
+    "typescript": "^3.0.3",
     "vue-template-compiler": "^2.5.17"
   }
 }
