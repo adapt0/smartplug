@@ -15,6 +15,25 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 #include <ArduinoJson.h>
 
 /////////////////////////////////////////////////////////////////////////////
+/// log web requests
+class WebRequestLogger : public AsyncWebHandler {
+public:
+    /////////////////////////////////////////////////////////////////////////
+    /// constructor
+    WebRequestLogger() { }
+    /// destructor
+    ~WebRequestLogger() override = default;
+
+    /////////////////////////////////////////////////////////////////////////
+    /// can we handle request?
+    bool canHandle(AsyncWebServerRequest* request) override final {
+        printf("%s %s\r\n", request->methodToString(), request->url().c_str());
+        return false;
+    }
+};
+
+
+/////////////////////////////////////////////////////////////////////////////
 /// constructor
 WebServer::WebServer(Settings& settings)
 : serverWebSocket_("/api/v1")
@@ -24,6 +43,9 @@ WebServer::WebServer(Settings& settings)
 /////////////////////////////////////////////////////////////////////////////
 /// begin web server
 void WebServer::begin() {
+    // request logger
+    server_.addHandler(new WebRequestLogger());
+
     // API requests
     {
         server_.on("/api/v1/ping", HTTP_GET, [](AsyncWebServerRequest* request) {
