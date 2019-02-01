@@ -10,7 +10,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 
 //- includes
 #include <memory>
-#include <freertos/freertos.h>
+#include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
 /////////////////////////////////////////////////////////////////////////////
