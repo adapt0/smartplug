@@ -18,7 +18,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 #include "web_server.h"
 #include "wifi_manager.h"
 #include <FS.h>
-#include <Settings.h>
+#include <settings.h>
 #include <user_interface.h> // wifi_station_dhcpc_XXX
 
 //- globals
@@ -57,7 +57,7 @@ void cmdCat(const char* argv[], int argc) {
             const auto tot = f.readBytes(buf, sizeof(buf));
             if (tot <= 0) break;
 
-            Serial.write(buf, tot);
+            Serial.write(reinterpret_cast<const uint8_t*>(buf), tot);
             ofs += tot;
         }
         Serial.println();
