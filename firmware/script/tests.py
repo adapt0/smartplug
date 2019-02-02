@@ -98,13 +98,43 @@ arduino_lib = test_env.StaticLibrary(os.path.join(projectbuild_dir, 'arduino'), 
     map(search_cpppaths, arduino_sources)
 ])
 
+#############################################################################
+# Our own custom check to see if there's a type conflict between the esp & local system headers
+# https://scons.org/doc/1.3.1/HTML/scons-user/x4113.html
+#
+# I've seen this on Ubuntu 18.04.1 with gcc-7
+# While clang 4.2.1 on my Mac is OK
+#
+# Rather than play preprocessor games, we disable our default test execution
+# when type conflicts are a problem
+#
+# /usr/include/x86_64-linux-gnu/sys/types.h:181:1: note: previous declaration as 'typedef long unsigned int u_int64_t'
+# __u_intN_t (64, __DI__);
+# ~/.platformio/packages/framework-arduinoespressif8266/tools/sdk/include/c_types.h:36:29: error: conflicting declaration 'typedef long long unsigned int u_int64_t'
+#  typedef unsigned long long  u_int64_t;
+def CheckTypesOk(context):
+    test_type_conflict_source = """
+    #include <c_types.h>
+    #include <sys/types.h>
 
+    int main(int, char**) {
+        return 0;
+    }
+    """
+
+    context.Message('Checking for header type conflict...')
+    result = context.TryLink(test_type_conflict_source, '.cpp')
+    context.Result(result)
+    return result
+conf_test = Configure(test_env, custom_tests = {'CheckTypesOk' : CheckTypesOk})
+# conf_test is checked below
+
+#############################################################################
 # Create a builder for tests
 def builder_unit_test(target, source, env):
     return subprocess.call([ source[0].abspath ])
 bld = Builder(action=builder_unit_test)
 test_env.Append(BUILDERS={'Test': bld})
-
 
 # tests
 program = test_env.Program(os.path.join(projectbuild_dir, 'tests'), [
@@ -113,4 +143,5 @@ program = test_env.Program(os.path.join(projectbuild_dir, 'tests'), [
 ], LIBS = [arduino_lib])
 
 tests = [test_env.Test("buildtests", program)]
-Default(tests)
+if conf_test.CheckTypesOk():
+    Default(tests)
