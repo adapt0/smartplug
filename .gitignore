@@ -1,6 +1,7 @@
 
 ## platform IO
 .sconf_temp
+.pio
 .pioenvs
 .piolibdeps
 

@@ -43,6 +43,15 @@ projectlib_dir = os.path.join(projenv['PROJECT_DIR'], 'lib')
 doctest_path = os.path.join(projectlib_dir, 'doctest-1.2.7')
 
 
+# retrieve path to framework-arduinoespressif8266 test stubs
+# we use this to pick up their pgmspace.h stub
+def get_framework_stubs_path():
+    for p in projenv['CPPPATH']:
+        if p.endswith('/framework-arduinoespressif8266/tools/sdk/include'):
+            return os.path.abspath(os.path.join(p, '../../../tests/host'))
+    return None
+
+
 # create a separate test environment, targeting the native platform (default)
 test_env = Environment(
     CPPDEFINES=[
@@ -50,10 +59,16 @@ test_env = Environment(
         'ARDUINOJSON_ENABLE_ARDUINO_STREAM',
         'ARDUINOJSON_ENABLE_ARDUINO_STRING',
         'ICACHE_RODATA_ATTR=""',
+        # missing lwip defines
+        'LWIP_IPV6=0',
+        'TCP_MSS=536',
+        'LWIP_FEATURES=0',
     ],
     CPPPATH=[
         # projenv['CPPPATH'],
         doctest_path,
+        os.path.join(projenv['PROJECTTEST_DIR'], 'stub'),
+        get_framework_stubs_path(),
     ],
     CXXFLAGS=projenv['CXXFLAGS'],
     PROJECT_DIR=projenv['PROJECT_DIR'],
@@ -82,52 +97,22 @@ def search_cpppaths(source):
         p = os.path.join(cpppath, source[0])
         if os.path.exists(p):
             return test_env.Object(p, **source[1])
-    return source
+    return test_env.Object(source[0], **source[1])
 
 
 # minimal Arduino sources
 arduino_sources_opts = { "CCFLAGS": ['-include', 'cmath' ] }
 arduino_sources = [
-    ('core_esp8266_noniso.c', { "CCFLAGS": ['-Wno-absolute-value'] }),
     ('IPAddress.cpp', arduino_sources_opts),
     ('Print.cpp', arduino_sources_opts),
-    ('pgmspace.cpp', {}),
+    ('Stream.cpp', arduino_sources_opts),
+    ('StreamString.cpp', arduino_sources_opts),
     ('WString.cpp', arduino_sources_opts),
 ]
 arduino_lib = test_env.StaticLibrary(os.path.join(projectbuild_dir, 'arduino'), [
     map(search_cpppaths, arduino_sources)
 ])
 
-#############################################################################
-# Our own custom check to see if there's a type conflict between the esp & local system headers
-# https://scons.org/doc/1.3.1/HTML/scons-user/x4113.html
-#
-# I've seen this on Ubuntu 18.04.1 with gcc-7
-# While clang 4.2.1 on my Mac is OK
-#
-# Rather than play preprocessor games, we disable our default test execution
-# when type conflicts are a problem
-#
-# /usr/include/x86_64-linux-gnu/sys/types.h:181:1: note: previous declaration as 'typedef long unsigned int u_int64_t'
-# __u_intN_t (64, __DI__);
-# ~/.platformio/packages/framework-arduinoespressif8266/tools/sdk/include/c_types.h:36:29: error: conflicting declaration 'typedef long long unsigned int u_int64_t'
-#  typedef unsigned long long  u_int64_t;
-def CheckTypesOk(context):
-    test_type_conflict_source = """
-    #include <c_types.h>
-    #include <sys/types.h>
-
-    int main(int, char**) {
-        return 0;
-    }
-    """
-
-    context.Message('Checking for header type conflict...')
-    result = context.TryLink(test_type_conflict_source, '.cpp')
-    context.Result(result)
-    return result
-conf_test = Configure(test_env, custom_tests = {'CheckTypesOk' : CheckTypesOk})
-# conf_test is checked below
 
 #############################################################################
 # Create a builder for tests
@@ -143,5 +128,4 @@ program = test_env.Program(os.path.join(projectbuild_dir, 'tests'), [
 ], LIBS = [arduino_lib])
 
 tests = [test_env.Test("buildtests", program)]
-if conf_test.CheckTypesOk():
-    Default(tests)
+Default(tests)
