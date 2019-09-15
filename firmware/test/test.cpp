@@ -7,7 +7,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 /////////////////////////////////////////////////////////////////////////////
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-#include <doctest/doctest.h>
+#include "doctest_ext.h"
 
 #include <cstdio>
 #include <sys/time.h>

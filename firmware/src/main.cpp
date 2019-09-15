@@ -90,8 +90,9 @@ void cmdReboot(const char*[], int) {
 }
 /// dump state
 void cmdState(const char*[], int) {
-    DynamicJsonBuffer buffer;
-    settings.toJson(buffer).printTo(Serial);
+    DynamicJsonDocument doc{Settings::JSON_STATE_SIZE};
+    settings.toJson(doc);
+    serializeJson(doc, Serial);
     Serial.println();
 }
 /// output our version
@@ -162,9 +163,9 @@ void loadSettings() {
     if (configFile) settings.loadFrom(configFile);
 
     //
-    settings.onPersistProperties([](const JsonObject& obj, JsonBuffer& buffer) {
+    settings.onPersistProperties([](const JsonDocument& docProps) {
         File configFile = SPIFFS.open("/config.json", "w");
-        if (configFile) obj.printTo(configFile);
+        if (configFile) serializeJson(docProps, configFile);
     });
 }
 

@@ -54,8 +54,9 @@ void WebServer::begin() {
         server_.on("/api/v1/state", HTTP_GET, [this](AsyncWebServerRequest* request) {
             auto* response = request->beginResponseStream("application/json");
             if (response) {
-                DynamicJsonBuffer buffer;
-                settings_.toJson(buffer).printTo(*response);
+                DynamicJsonDocument doc{Settings::JSON_STATE_SIZE};
+                settings_.toJson(doc);
+                serializeJson(doc, *response);
                 request->send(response);
             }
         });
@@ -163,14 +164,15 @@ void WebServer::begin() {
     });
 
     // dirty property notifications
-    settings_.onDirtyProperties([this](const JsonObject& obj, JsonBuffer& buffer) {
-        auto& json = buffer.createObject();
+    settings_.onDirtyProperties([this](const JsonDocument& docProps) {
+        DynamicJsonDocument doc{Settings::JSON_STATE_SIZE};
+        auto json = doc.to<JsonObject>();
         json["jsonrpc"] = "2.0";
         json["method"] = "update";
-        json["params"] = obj;
-        auto* textBuffer = serverWebSocket_.makeBuffer(json.measureLength());
+        json["params"] = docProps;
+        auto* textBuffer = serverWebSocket_.makeBuffer(measureJson(json));
         if (textBuffer) {
-            json.printTo(reinterpret_cast<char*>(textBuffer->get()), textBuffer->length() + 1);
+            serializeJson(json, reinterpret_cast<char*>(textBuffer->get()), textBuffer->length() + 1);
             serverWebSocket_.textAll(textBuffer);
         }
     });
@@ -208,7 +210,7 @@ printf("ws[%s][%u] pong[%u]: %s\r\n", server->url(), client->id(), len, (len)?(c
         if (info->final && 0 == info->index && info->len == len) {
             //the whole message is in a single frame and we got all of it's data
             // printf("ws[%s][%u] %s-message[%llu]: ", server->url(), client->id(), (info->opcode == WS_TEXT) ? "text" : "binary", info->len);
-            onJsonRpc_(client, (char*)data);
+            onJsonRpc_(client, (char*)data, len);
 
         } else {
             //message is comprised of multiple frames or the frame is split into multiple packets
@@ -236,13 +238,12 @@ printf("ws[%s][%u] pong[%u]: %s\r\n", server->url(), client->id(), len, (len)?(c
 
 /////////////////////////////////////////////////////////////////////////////
 /// on JSON-RPC data
-void WebServer::onJsonRpc_(AsyncWebSocketClient* client, char* data) {
+void WebServer::onJsonRpc_(AsyncWebSocketClient* client, char* data, size_t len) {
     // parse JSON
-    DynamicJsonBuffer requestBuffer;
-    const auto& request = requestBuffer.parseObject((char*)data);
-    if (!request.success()) return; // :(
+    DynamicJsonDocument request{Settings::JSON_REQUEST_SIZE};
+    if (DeserializationError::Ok != deserializeJson(request, data, len)) return; // :(
 
-// request.printTo(Serial);
+    // serializeJson(request, Serial);
 
     // A String specifying the version of the JSON-RPC protocol. MUST be exactly "2.0".
     {
@@ -260,27 +261,29 @@ void WebServer::onJsonRpc_(AsyncWebSocketClient* client, char* data) {
 
     // process request
     {
-        DynamicJsonBuffer responseBuffer;
-        auto result = settings_.call(method, params, responseBuffer);
+        DynamicJsonDocument resultDoc{Settings::JSON_STATE_SIZE};
+        const auto result = settings_.call(method, params, resultDoc);
 
         // fill in response
-        auto& response = responseBuffer.createObject();
+        DynamicJsonDocument responseDoc{Settings::JSON_STATE_SIZE};
+        auto response = responseDoc.to<JsonObject>();
         response["jsonrpc"] = "2.0";
-        if (id.success()) response["id"] = id;
+        response["id"] = id;
 
-        if (JsonRpcError::NO_ERROR == result.first) {
-            if (!result.second.success()) return;
-            response["result"] = result.second;
+        if (JsonRpcError::NO_ERROR == result) {
+            response["result"] = resultDoc;
         } else {
-            auto& error = response.createNestedObject("error");
-            error["code"] = static_cast<int>(result.first);
-            error["message"] = result.second;
+            auto error = response.createNestedObject("error");
+            error["code"] = static_cast<int>(result);
+            error["message"] = resultDoc;
         }
 
+        // serializeJson(response, Serial);
+
         // send response
-        auto* buffer = serverWebSocket_.makeBuffer(response.measureLength());
+        auto* buffer = serverWebSocket_.makeBuffer(measureJson(response));
         if (buffer) {
-            response.printTo(reinterpret_cast<char*>(buffer->get()), buffer->length() + 1);
+            serializeJson(response, reinterpret_cast<char*>(buffer->get()), buffer->length() + 1); // room for null terminator (buffer included this for us)
             client->text(buffer);
         }
     }

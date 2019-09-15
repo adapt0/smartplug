@@ -7,16 +7,17 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 /////////////////////////////////////////////////////////////////////////////
 
 //- includes
-#include <doctest/doctest.h>
+#include "doctest_ext.h"
 #include "property.h"
 #include <string>
 
 /////////////////////////////////////////////////////////////////////////////
 /// convert property tree to a JSON string
 std::string toJson(PropertyNode& property, int flags = 0) {
-    DynamicJsonBuffer jsonBuffer;
+    DynamicJsonDocument doc{2048};
+    property.toJson(doc, flags);
     std::string out;
-    property.toJson(jsonBuffer, flags).printTo(out);
+    serializeJson(doc, out);
     return out;
 }
 
@@ -85,7 +86,7 @@ TEST_SUITE("Property") {
                 {
                     PropertyIpAddress prop_parent_child2{ &prop_parent, "ip", IPAddress{192, 168, 1, 100} };
                     CHECK(prop_parent_child2.name() == "ip");
-                    CHECK(prop_parent_child2.value() == IPAddress{192, 168, 1, 100});
+                    CHECK(prop_parent_child2.value().toString() == "192.168.1.100");
                     CHECK(prop_parent_child2.dirty());
                     CHECK(toJson(root) == R"({"parent":{"bool":true,"ip":"192.168.1.100"},"child":0})");
                 }
@@ -241,9 +242,9 @@ TEST_SUITE("Property") {
         CHECK(false == prop_root.persistDirty());
 
         auto loadJson = [&prop_root] {
-            DynamicJsonBuffer buffer;
-            auto& obj_root = buffer.createObject();
-            auto& obj_parent = obj_root.createNestedObject("parent");
+            DynamicJsonDocument doc{2048};
+            auto obj_root = doc.to<JsonObject>();
+            auto obj_parent = obj_root.createNestedObject("parent");
             obj_parent["child1"] = 1;
             obj_parent["child2"] = 2;
 

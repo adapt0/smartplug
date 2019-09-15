@@ -33,6 +33,10 @@ enum class JsonRpcError {
 /// persistent settings
 class Settings {
 public:
+    enum {
+        JSON_REQUEST_SIZE   = 512,  ///< how big of a JSON request we can expect
+        JSON_STATE_SIZE     = 4096, ///< JSON limit
+    };
     /// network settings to apply
     struct Network {
         String      hostname;
@@ -47,10 +51,8 @@ public:
     /// pointer to Network
     using NetworkUPtr = std::unique_ptr<Network>;
 
-    /// response to method call
-    using Result = std::pair<JsonRpcError, JsonVariant>;
     /// callback for property notifications
-    using FuncOnProperties = std::function<void (const JsonObject&, JsonBuffer& buffer)>;
+    using FuncOnProperties = std::function<void (const JsonDocument)>;
     /// callback on relay change
     using FuncOnRelay = std::function<void (bool)>;
     /// callback on network settings
@@ -71,8 +73,8 @@ public:
 
     /////////////////////////////////////////////////////////////////////////
     /// output JSON
-    JsonObject& toJson(JsonBuffer& buffer) {
-        return propRoot_.toJson(buffer);
+    void toJson(JsonDocument& doc) {
+        propRoot_.toJson(doc);
     }
 
     /////////////////////////////////////////////////////////////////////////
@@ -97,24 +99,24 @@ public:
     /// sys.net
     PropertyNode& propSysNet() { return propSysNet_; }
 
-    Result call(const char* method, const JsonVariant& params, JsonBuffer& buffer);
+    JsonRpcError call(const char* method, const JsonVariant& params, JsonDocument& result);
 
     void updateMeasurements(double watts, double volts);
 
 private:
     /// member function pointer for handling methods
-    using MethodFunc = Result (Settings::*)(const JsonVariant&, JsonBuffer&);
+    using MethodFunc = JsonRpcError (Settings::*)(const JsonVariant&, JsonDocument&);
     /// method name to member function binding
     using MethodFuncPair = std::pair<const char*, MethodFunc>;
 
     /// collection of methods to member functions
     static const MethodFuncPair methods_[];
 
-    Result methodNetwork_(const JsonVariant& params, JsonBuffer& buffer);
-    Result methodPing_(const JsonVariant& params, JsonBuffer& buffer);
-    Result methodRelay_(const JsonVariant& params, JsonBuffer& buffer);
-    Result methodState_(const JsonVariant& params, JsonBuffer& buffer);
-    Result methodTest_(const JsonVariant& params, JsonBuffer& buffer);
+    JsonRpcError methodNetwork_(const JsonVariant& params, JsonDocument& result);
+    JsonRpcError methodPing_(const JsonVariant& params, JsonDocument& result);
+    JsonRpcError methodRelay_(const JsonVariant& params, JsonDocument& result);
+    JsonRpcError methodState_(const JsonVariant& params, JsonDocument& result);
+    JsonRpcError methodTest_(const JsonVariant& params, JsonDocument& result);
 
     PropertyNode            propRoot_;
     PropertyBool            propRelay_;

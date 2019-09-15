@@ -26,7 +26,7 @@ public:
 
 private:
     void onWebSocketEvent_(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType type, void* arg, uint8_t* data, size_t len);
-    void onJsonRpc_(AsyncWebSocketClient* client, char* data);
+    void onJsonRpc_(AsyncWebSocketClient* client, char* data, size_t len);
 
     AsyncWebServer  server_{80};        ///< async web server
     AsyncWebSocket  serverWebSocket_;   ///< async web socket

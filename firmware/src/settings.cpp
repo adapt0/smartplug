@@ -10,7 +10,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 #include "settings.h"
 #include "utils.h"
 #include "version.h"
-#include <ip_addr.h>
+// #include <ip_addr.h>
 
 extern "C" unsigned long millis();
 
@@ -51,9 +51,9 @@ void Settings::tick() {
         lastMillisDirty_ = now;
 
         if (onDirtyProperties_ && propRoot_.dirty()) {
-            DynamicJsonBuffer buffer;
-            const auto& obj = propRoot_.toJson(buffer, Property::DIRTY);
-            onDirtyProperties_(obj, buffer);
+            DynamicJsonDocument docProps{Settings::JSON_STATE_SIZE};
+            propRoot_.toJson(docProps, Property::DIRTY);
+            if (!docProps.isNull()) onDirtyProperties_(docProps);
         }
     }
 
@@ -63,9 +63,9 @@ void Settings::tick() {
 
         if (onPersistProperties_ && propRoot_.persistDirty()) {
             printf("Saving properties...\r\n");
-            DynamicJsonBuffer buffer;
-            const auto& obj = propRoot_.toJson(buffer, Property::PERSIST);
-            onPersistProperties_(obj, buffer);
+            DynamicJsonDocument docProps{Settings::JSON_STATE_SIZE};
+            propRoot_.toJson(docProps, Property::PERSIST);
+            if (!docProps.isNull()) onPersistProperties_(docProps);
         }
     }
 }
@@ -73,10 +73,9 @@ void Settings::tick() {
 /////////////////////////////////////////////////////////////////////////////
 /// load settings from JSON stream
 void Settings::loadFrom(Stream& config) {
-    DynamicJsonBuffer requestBuffer;
-    propRoot_.fromJson(
-        requestBuffer.parse(config)
-    );
+    DynamicJsonDocument doc{Settings::JSON_STATE_SIZE};
+    deserializeJson(doc, config);
+    propRoot_.fromJson(doc.to<JsonObject>());
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -88,22 +87,24 @@ void Settings::updateMeasurements(double watts, double volts) {
 
 /////////////////////////////////////////////////////////////////////////////
 /// call method
-Settings::Result Settings::call(const char* method, const JsonVariant& params, JsonBuffer& buffer) {
+JsonRpcError Settings::call(const char* method, const JsonVariant& params, JsonDocument& result) {
     for (const auto& m : methods_) {
         if (0 != strcmp(method, m.first)) continue;
-        return (this->*(m.second))(params, buffer);
+        return (this->*(m.second))(params, result);
     }
-    return Result{JsonRpcError::METHOD_NOT_FOUND, "Method not found"};
+
+    result.set("Method not found");
+    return JsonRpcError::METHOD_NOT_FOUND;
 }
 
 /////////////////////////////////////////////////////////////////////////////
 /// network - apply new network settings
-auto Settings::methodNetwork_(const JsonVariant& params, JsonBuffer& /*buffer*/) -> Result {
+JsonRpcError Settings::methodNetwork_(const JsonVariant& params, JsonDocument& result) {
     const char* ssid = params["ssid"];
-    if (!ssid) return Result{JsonRpcError::INVALID_PARAMS, "Missing SSID"};
+    if (!ssid) { result.set("Missing SSID"); return JsonRpcError::INVALID_PARAMS; }
 
     NetworkUPtr network(new Network);
-    if (!network) return Result{JsonRpcError::INTERNAL_ERROR, "Allocation failed"};
+    if (!network) { result.set("Allocation failed"); return JsonRpcError::INTERNAL_ERROR; }
 
     network->ssid = ssid;
     network->hostname = static_cast<const char*>(params["hostname"]);
@@ -115,63 +116,69 @@ auto Settings::methodNetwork_(const JsonVariant& params, JsonBuffer& /*buffer*/)
     // an empty or invalid ipv4Address assumes DHCP
     const char* ip = params["ipv4Address"];
     if (!dhcp && ip) {
-        if (!network->ipv4Address.fromString(ip)) return Result{JsonRpcError::INVALID_PARAMS, "Invalid ipv4Address"};
+        if (!network->ipv4Address.fromString(ip)) { result.set("Invalid ipv4Address"); return JsonRpcError::INVALID_PARAMS; }
 
         // check IP validity
-        if (INADDR_NONE != network->ipv4Address) {
+        if (INADDR_ANY != network->ipv4Address && INADDR_NONE != network->ipv4Address) {
             const char* subnet = params["ipv4Subnet"];
-            if (!subnet) return Result{JsonRpcError::INVALID_PARAMS, "Missing ipv4Subnet"};
-            if (!network->ipv4Subnet.fromString(subnet)) return Result{JsonRpcError::INVALID_PARAMS, "Invalid ipv4Subnet"};
+            if (!subnet) { result.set("Missing ipv4Subnet"); return JsonRpcError::INVALID_PARAMS; }
+            if (!network->ipv4Subnet.fromString(subnet)) { result.set("Invalid ipv4Subnet"); return JsonRpcError::INVALID_PARAMS; }
 
             // valid subnet?
-            if (!utils::validSubnet(network->ipv4Subnet)) return Result{JsonRpcError::INVALID_PARAMS, "Invalid ipv4Subnet"};
+            if (!utils::validSubnet(network->ipv4Subnet)) { result.set("Invalid ipv4Subnet"); return JsonRpcError::INVALID_PARAMS; }
 
             // optional gateway
             const char* gateway = params["ipv4Gateway"];
-            if (gateway && gateway[0] && !network->ipv4Gateway.fromString(gateway)) return Result{JsonRpcError::INVALID_PARAMS, "Invalid ipv4Gateway"};
+            if (gateway && gateway[0] && !network->ipv4Gateway.fromString(gateway)) { result.set("Invalid ipv4Gateway"); return JsonRpcError::INVALID_PARAMS; }
 
             // optional DNS
             const char* dns1 = params["ipv4Dns1"];
-            if (dns1 && dns1[0] && !network->ipv4Dns1.fromString(dns1)) return Result{JsonRpcError::INVALID_PARAMS, "Invalid ipv4Dns1"};
+            if (dns1 && dns1[0] && !network->ipv4Dns1.fromString(dns1)) { result.set("Invalid ipv4Dns1"); return JsonRpcError::INVALID_PARAMS; }
             const char* dns2 = params["ipv4Dns2"];
-            if (dns2 && dns2[0] && !network->ipv4Dns2.fromString(dns2)) return Result{JsonRpcError::INVALID_PARAMS, "Invalid ipv4Dns2"};
+            if (dns2 && dns2[0] && !network->ipv4Dns2.fromString(dns2)) { result.set("Invalid ipv4Dns2"); return JsonRpcError::INVALID_PARAMS; }
         }
     }
 
     // apply settings
     const bool res = !onNetwork_ || onNetwork_(std::move(network));
-    return Result{JsonRpcError::NO_ERROR, res};
+    result.set(res);
+    return JsonRpcError::NO_ERROR;
 }
 
 /////////////////////////////////////////////////////////////////////////////
 /// ping - responds with pong
-auto Settings::methodPing_(const JsonVariant& /*params*/, JsonBuffer& /*buffer*/) -> Result {
-    return Result{JsonRpcError::NO_ERROR, "pong"};
+JsonRpcError Settings::methodPing_(const JsonVariant& /*params*/, JsonDocument& result) {
+    result.set("pong");
+    return JsonRpcError::NO_ERROR;
 }
 
 /////////////////////////////////////////////////////////////////////////////
 /// relay - set relay
-auto Settings::methodRelay_(const JsonVariant& params, JsonBuffer& /*buffer*/) -> Result {
-    if (!params.is<bool>()) return Result{JsonRpcError::INVALID_PARAMS, "Expected boolean"};
+JsonRpcError Settings::methodRelay_(const JsonVariant& params, JsonDocument& result) {
+    if (!params.is<bool>()) { result.set("Expected boolean"); return JsonRpcError::INVALID_PARAMS; }
 
     const auto newValue = params.as<bool>();
     if (propRelay_.value() != newValue) {
         propRelay_.set(newValue);
         if (onRelay_) onRelay_(newValue);
     }
-    return Result{JsonRpcError::NO_ERROR, true};
+
+    result.set(true);
+    return JsonRpcError::NO_ERROR;
 }
 
 /////////////////////////////////////////////////////////////////////////////
 /// state - retrieve current settings
-auto Settings::methodState_(const JsonVariant& /*params*/, JsonBuffer& buffer) -> Result {
-    return Result{JsonRpcError::NO_ERROR, this->toJson(buffer)};
+JsonRpcError Settings::methodState_(const JsonVariant& /*params*/, JsonDocument& result) {
+    this->toJson(result);
+    return JsonRpcError::NO_ERROR;
 }
 
 /////////////////////////////////////////////////////////////////////////////
 /// test - used for testing the RPC interface
-auto Settings::methodTest_(const JsonVariant& /*params*/, JsonBuffer& /*buffer*/) -> Result {
+JsonRpcError Settings::methodTest_(const JsonVariant& /*params*/, JsonDocument& result) {
     const auto newValue = propTestInt_.value() + 1;
     propTestInt_.set(newValue);
-    return Result{JsonRpcError::NO_ERROR, newValue};
+    result.set(newValue);
+    return JsonRpcError::NO_ERROR;
 }

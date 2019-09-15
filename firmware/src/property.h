@@ -111,7 +111,7 @@ public:
     void clearDirty() override;
 
     void fromJson(const JsonVariant& json);
-    JsonObject& toJson(JsonBuffer& buffer, int flags = 0);
+    void toJson(JsonDocument& json, int flags = 0);
 
 private:
     void fromJson_(const JsonVariant& json) override;
@@ -139,7 +139,7 @@ protected:
     /////////////////////////////////////////////////////////////////////////
     /// output JSON
     void toJson_(JsonObject& json, int /*flags*/) override {
-        json.set(name().c_str(), (const char*)nullptr);
+        json[name()] = nullptr;
     }
 };
 
@@ -153,7 +153,7 @@ public:
     /// constructor
     PropertyValueT(PropertyNode* parent, String name, T value = T{}, int flags = 0)
     : Property(parent, std::move(name), flags)
-    , value_(value)
+    , value_(std::move(value))
     { }
     /// destructor
     ~PropertyValueT() override = default;
@@ -177,11 +177,11 @@ protected:
     /////////////////////////////////////////////////////////////////////////
     /// process from JSON
     void fromJson_(const JsonVariant& json) override {
-        if (json.success()) value_ = json.as<T>();
+        if (!json.isNull()) value_ = json.as<T>();
     }
     /// output JSON
     void toJson_(JsonObject& json, int /*flags*/) override {
-        json.set(name().c_str(), value());
+        json[name()] = value();
     }
 
 private:
@@ -209,7 +209,7 @@ inline void PropertyValueT<String>::fromJson_(const JsonVariant& json) {
 /// specialize toJson handling of IPAddress
 template <>
 inline void PropertyValueT<IPAddress>::toJson_(JsonObject& json, int /*flags*/) {
-    json.set(name().c_str(), value().toString());
+    json[name()] = value().isSet() ? value().toString() : String{};
 }
 
 #endif // INCLUDED__PROPERTY

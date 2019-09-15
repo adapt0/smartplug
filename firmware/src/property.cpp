@@ -95,11 +95,11 @@ void PropertyNode::clearDirty() {
 /////////////////////////////////////////////////////////////////////////////
 /// load data from JSON
 void PropertyNode::fromJson(const JsonVariant& json) {
-    return fromJson_(json);
+    fromJson_(json);
 }
 /// load data from JSON
 void PropertyNode::fromJson_(const JsonVariant& json) {
-    if (!json.success()) return;
+    if (json.isNull()) return;
     for (auto child = childFirst_; child; child = child->siblingNext_) {
         if (child->persist()) {
             child->fromJson_( json[child->name()] );
@@ -109,16 +109,15 @@ void PropertyNode::fromJson_(const JsonVariant& json) {
 
 /////////////////////////////////////////////////////////////////////////////
 /// visit our property nodes
-JsonObject& PropertyNode::toJson(JsonBuffer& buffer, int flags) {
-    auto& obj = buffer.createObject();
+void PropertyNode::toJson(JsonDocument& json, int flags) {
+    auto obj = json.to<JsonObject>();
     if ((flags & DIRTY)   && (flags_ & DIRTY)) flags_ &= ~DIRTY;
     if ((flags & PERSIST) && (flags_ & DIRTY_PERSIST)) flags_ &= ~DIRTY_PERSIST;
     jsonChildren_(obj, flags);
-    return obj;
 }
 /// convert child properties to JSON
 void PropertyNode::toJson_(JsonObject& json, int flags) {
-    auto& obj = json.createNestedObject(name());
+    auto obj = json.createNestedObject(name());
     jsonChildren_(obj, flags);
 }
 /// populate JSON with children

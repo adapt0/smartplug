@@ -7,7 +7,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 /////////////////////////////////////////////////////////////////////////////
 
 //- includes
-#include <doctest/doctest.h>
+#include "doctest_ext.h"
 #include "settings.h"
 
 /////////////////////////////////////////////////////////////////////////////
@@ -17,10 +17,10 @@ TEST_SUITE("Settings") {
         Settings settings;
 
         {
-            DynamicJsonBuffer buffer;
-            const auto result = settings.call("unknown", buffer.createObject(), buffer);
-            CHECK(result.first == JsonRpcError::METHOD_NOT_FOUND);
-            CHECK(result.second == "Method not found");
+            DynamicJsonDocument result{Settings::JSON_STATE_SIZE};
+            const auto error = settings.call("unknown", JsonObject{}, result);
+            CHECK(error == JsonRpcError::METHOD_NOT_FOUND);
+            CHECK(result.as<std::string>() == "Method not found");
         }
     }
 
@@ -34,92 +34,99 @@ TEST_SUITE("Settings") {
             return true;
         });
 
+        DynamicJsonDocument resultDoc{Settings::JSON_STATE_SIZE};
         {
-            DynamicJsonBuffer buffer;
-            const auto result = settings.call("network", buffer.createObject(), buffer);
-            CHECK(result.first == JsonRpcError::INVALID_PARAMS);
-            CHECK(result.second == "Missing SSID");
+            const auto error = settings.call("network", JsonObject{}, resultDoc);
+            CHECK(error == JsonRpcError::INVALID_PARAMS);
+            const auto result = resultDoc.as<std::string>();
+            CHECK(result == "Missing SSID");
         }
         {
-            DynamicJsonBuffer buffer;
-            auto& obj = buffer.createObject();
+            DynamicJsonDocument param{Settings::JSON_REQUEST_SIZE};
+            auto obj = param.to<JsonObject>();
             obj["ssid"]        = "ssid";
             obj["ipv4Address"] = "invalid";
 
-            const auto result = settings.call("network", obj, buffer);
-            CHECK(result.first == JsonRpcError::INVALID_PARAMS);
-            CHECK(result.second == "Invalid ipv4Address");
+            const auto error = settings.call("network", obj, resultDoc);
+            CHECK(error == JsonRpcError::INVALID_PARAMS);
+            const auto result = resultDoc.as<std::string>();
+            CHECK(result == "Invalid ipv4Address");
         }
         {
-            DynamicJsonBuffer buffer;
-            auto& obj = buffer.createObject();
+            DynamicJsonDocument param{Settings::JSON_REQUEST_SIZE};
+            auto obj = param.to<JsonObject>();
             obj["ssid"]        = "ssid";
             obj["ipv4Address"] = "1.2.3.4";
 
-            const auto result = settings.call("network", obj, buffer);
-            CHECK(result.first == JsonRpcError::INVALID_PARAMS);
-            CHECK(result.second == "Missing ipv4Subnet");
+            const auto error = settings.call("network", obj, resultDoc);
+            CHECK(error == JsonRpcError::INVALID_PARAMS);
+            const auto result = resultDoc.as<std::string>();
+            CHECK(result == "Missing ipv4Subnet");
         }
         {
-            DynamicJsonBuffer buffer;
-            auto& obj = buffer.createObject();
+            DynamicJsonDocument param{Settings::JSON_REQUEST_SIZE};
+            auto obj = param.to<JsonObject>();
             obj["ssid"]        = "ssid";
             obj["ipv4Address"] = "1.2.3.4";
             obj["ipv4Subnet"]  = "invalid";
 
-            const auto result = settings.call("network", obj, buffer);
-            CHECK(result.first == JsonRpcError::INVALID_PARAMS);
-            CHECK(result.second == "Invalid ipv4Subnet");
+            const auto error = settings.call("network", obj, resultDoc);
+            CHECK(error == JsonRpcError::INVALID_PARAMS);
+            const auto result = resultDoc.as<std::string>();
+            CHECK(result == "Invalid ipv4Subnet");
         }
         {
-            DynamicJsonBuffer buffer;
-            auto& obj = buffer.createObject();
+            DynamicJsonDocument param{Settings::JSON_REQUEST_SIZE};
+            auto obj = param.to<JsonObject>();
             obj["ssid"]        = "ssid";
             obj["ipv4Address"] = "1.2.3.4";
             obj["ipv4Subnet"]  = "1.2.3.4";
 
-            const auto result = settings.call("network", obj, buffer);
-            CHECK(result.first == JsonRpcError::INVALID_PARAMS);
-            CHECK(result.second == "Invalid ipv4Subnet");
+            const auto error = settings.call("network", obj, resultDoc);
+            CHECK(error == JsonRpcError::INVALID_PARAMS);
+            const auto result = resultDoc.as<std::string>();
+            CHECK(result == "Invalid ipv4Subnet");
         }
 
         {
-            DynamicJsonBuffer buffer;
-            auto& obj = buffer.createObject();
+            DynamicJsonDocument param{Settings::JSON_REQUEST_SIZE};
+            auto obj = param.to<JsonObject>();
             obj["ssid"] = "ssid";
 
-            const auto result = settings.call("network", obj, buffer);
-            CHECK(result.first == JsonRpcError::NO_ERROR);
-            CHECK(result.second == true);
+            const auto error = settings.call("network", obj, resultDoc);
+            CHECK(error == JsonRpcError::NO_ERROR);
+            const auto result = resultDoc.as<bool>();
+            CHECK(result == true);
 
             CHECK(networkSettings->hostname == "");
             CHECK(networkSettings->ssid == "ssid");
             CHECK(networkSettings->password == "");
-            CHECK(networkSettings->ipv4Address.toString() == "0.0.0.0");
-            CHECK(networkSettings->ipv4Subnet.toString()  == "0.0.0.0");
-            CHECK(networkSettings->ipv4Gateway.toString() == "0.0.0.0");
+            CHECK(!networkSettings->ipv4Address.isSet());
+            CHECK(!networkSettings->ipv4Subnet.isSet());
+            CHECK(!networkSettings->ipv4Gateway.isSet());
         }
         {
-            DynamicJsonBuffer buffer;
-            auto& obj = buffer.createObject();
+            DynamicJsonDocument param{Settings::JSON_REQUEST_SIZE};
+            auto obj = param.to<JsonObject>();
             obj["ssid"] = "ssid";
             obj["ipv4Address"] = "0.0.0.0";
             obj["ipv4Subnet"]  = "doesn't matter";
 
-            const auto result = settings.call("network", obj, buffer);
-            CHECK(result.first == JsonRpcError::NO_ERROR);
-            CHECK(result.second == true);
+            const auto error = settings.call("network", obj, resultDoc);
+            CHECK(error  == JsonRpcError::NO_ERROR);
+            const auto result = resultDoc.as<bool>();
+            CHECK(result == true);
 
             CHECK(networkSettings->hostname == "");
             CHECK(networkSettings->ssid == "ssid");
             CHECK(networkSettings->password == "");
-            CHECK(networkSettings->ipv4Address.toString() == "0.0.0.0");
-            CHECK(networkSettings->ipv4Subnet.toString()  == "0.0.0.0");
-            CHECK(networkSettings->ipv4Gateway.toString() == "0.0.0.0");
+            CHECK(!networkSettings->ipv4Address.isSet());
+            CHECK(!networkSettings->ipv4Subnet.isSet());
+            CHECK(!networkSettings->ipv4Gateway.isSet());
         }
         {
-            DynamicJsonBuffer buffer;
-            auto& obj = buffer.createObject();
+            DynamicJsonDocument param{Settings::JSON_REQUEST_SIZE};
+            auto obj = param.to<JsonObject>();
             obj["hostname"]    = "hostname";
             obj["ssid"]        = "ssid";
             obj["password"]    = "password";
@@ -127,9 +134,10 @@ TEST_SUITE("Settings") {
             obj["ipv4Subnet"]  = "255.255.255.0";
             obj["ipv4Gateway"] = "192.168.1.1";
 
-            const auto result = settings.call("network", obj, buffer);
-            CHECK(result.first == JsonRpcError::NO_ERROR);
-            CHECK(result.second == true);
+            const auto error = settings.call("network", obj, resultDoc);
+            CHECK(error  == JsonRpcError::NO_ERROR);
+            const auto result = resultDoc.as<bool>();
+            CHECK(result == true);
 
             CHECK(networkSettings->hostname == "hostname");
             CHECK(networkSettings->ssid     == "ssid");
@@ -144,11 +152,12 @@ TEST_SUITE("Settings") {
     TEST_CASE("call - ping") {
         Settings settings;
 
+        DynamicJsonDocument resultDoc{2048};
         {
-            DynamicJsonBuffer buffer;
-            const auto result = settings.call("ping", buffer.createObject(), buffer);
-            CHECK(result.first == JsonRpcError::NO_ERROR);
-            CHECK(result.second == "pong");
+            const auto error = settings.call("ping", JsonObject{}, resultDoc);
+            CHECK(error == JsonRpcError::NO_ERROR);
+            const auto result = resultDoc.as<std::string>();
+            CHECK(result == "pong");
         }
     }
 
@@ -163,44 +172,52 @@ TEST_SUITE("Settings") {
             onRelayCalled++;
         });
 
+        DynamicJsonDocument paramsDoc{1024};
+        auto params = paramsDoc.to<JsonVariant>();
+
+        DynamicJsonDocument resultDoc{1024};
         {
-            DynamicJsonBuffer buffer;
-            const auto result = settings.call("relay", buffer.createObject(), buffer);
-            CHECK(result.first == JsonRpcError::INVALID_PARAMS);
-            CHECK(result.second == "Expected boolean");
+            const auto error = settings.call("relay", JsonObject{}, resultDoc);
+            CHECK(error == JsonRpcError::INVALID_PARAMS);
+            const auto result = resultDoc.as<std::string>();
+            CHECK(result == "Expected boolean");
             CHECK(onRelayCalled == 0);
         }
 
         {
-            DynamicJsonBuffer buffer;
-            const auto result = settings.call("relay", true, buffer);
-            CHECK(result.first == JsonRpcError::NO_ERROR);
-            CHECK(result.second == true);
+            params.set(true);
+            const auto error = settings.call("relay", params, resultDoc);
+            CHECK(error == JsonRpcError::NO_ERROR);
+            const auto result = resultDoc.as<bool>();
+            CHECK(result == true);
             CHECK(onRelayCalled == 1);
             CHECK(relayState == true);
         }
         {
-            DynamicJsonBuffer buffer;
-            const auto result = settings.call("relay", true, buffer);
-            CHECK(result.first == JsonRpcError::NO_ERROR);
-            CHECK(result.second == true);
+            params.set(true);
+            const auto error = settings.call("relay", params, resultDoc);
+            CHECK(error == JsonRpcError::NO_ERROR);
+            const auto result = resultDoc.as<bool>();
+            CHECK(result == true);
             CHECK(onRelayCalled == 1); // <= no change
             CHECK(relayState == true);
         }
 
         {
-            DynamicJsonBuffer buffer;
-            const auto result = settings.call("relay", false, buffer);
-            CHECK(result.first == JsonRpcError::NO_ERROR);
-            CHECK(result.second == true);
+            params.set(false);
+            const auto error = settings.call("relay", params, resultDoc);
+            CHECK(error == JsonRpcError::NO_ERROR);
+            const auto result = resultDoc.as<bool>();
+            CHECK(result == true);
             CHECK(onRelayCalled == 2);
             CHECK(relayState == false);
         }
         {
-            DynamicJsonBuffer buffer;
-            const auto result = settings.call("relay", false, buffer);
-            CHECK(result.first == JsonRpcError::NO_ERROR);
-            CHECK(result.second == true);
+            params.set(false);
+            const auto error = settings.call("relay", params, resultDoc);
+            CHECK(error == JsonRpcError::NO_ERROR);
+            const auto result = resultDoc.as<bool>();
+            CHECK(result == true);
             CHECK(onRelayCalled == 2); // <= no change
             CHECK(relayState == false);
         }

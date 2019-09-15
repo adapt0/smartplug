@@ -7,7 +7,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 /////////////////////////////////////////////////////////////////////////////
 
 //- includes
-#include <doctest/doctest.h>
+#include "doctest_ext.h"
 #include "utils.h"
 #include <IPAddress.h>
 
