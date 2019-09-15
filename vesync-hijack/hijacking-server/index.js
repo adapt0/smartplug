@@ -143,7 +143,7 @@ class VesyncHijack {
             res.success = success;
             return res;
         } else {
-            throw new Error(`Unsupported platform ${process.platform}`);
+            throw new Error(`Unsupported platform ${process.platform}. Please use --ssid and --bssid to provide WiFi details`);
         }
     }
 
@@ -174,7 +174,7 @@ class VesyncHijack {
             this.apBssidStr_ = apBssid;
         } else {
             // find local wifi device
-            console.log("Looking for local WiFi interface (use --ssid & -bssid to override)");
+            console.log('Looking for local WiFi interface (use --ssid & -bssid to override)');
             const res = this.getWifiInfo_();
             if (!res || !res.success) {
                 throw new Error('Failed to find WiFi interface');
