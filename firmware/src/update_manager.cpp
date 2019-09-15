@@ -37,7 +37,7 @@ void UpdateManager::begin(const String& hostname) {
         lastPercent_ = percent;
         Serial.printf("\r%u%%", percent);
     });
-    ArduinoOTA.begin();
+    ArduinoOTA.begin(false); // without mDNS
 }
 
 void UpdateManager::tick() {

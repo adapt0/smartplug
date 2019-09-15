@@ -160,7 +160,10 @@ void loadSettings() {
 
     //
     File configFile = SPIFFS.open("/config.json", "r");
-    if (configFile) settings.loadFrom(configFile);
+    if (configFile) {
+        printf("Loading config...\r\n");
+        settings.loadFrom(configFile);
+    }
 
     //
     settings.onPersistProperties([](const JsonDocument& docProps) {
@@ -183,10 +186,12 @@ void setup() {
     loadSettings();
 
     //
+    printf("Initialize WiFi...\r\n");
     wifiManager.begin();
 
     smartPlug.begin();
 
+    printf("Starting OTA...\r\n");
     updateManager.attachUpdating([](bool inProgress) {
         if (inProgress) smartPlug.setRelay(false);
     });
@@ -195,6 +200,7 @@ void setup() {
     button.begin();
 
     //
+    printf("Starting web server...\r\n");
     webServer.begin();
 
     //
