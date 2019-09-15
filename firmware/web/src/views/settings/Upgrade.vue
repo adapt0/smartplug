@@ -35,7 +35,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Modal } from 'bootstrap-vue';
+import { BModal } from 'bootstrap-vue';
 import 'vue-awesome/icons/spinner';
 
 @Component
@@ -55,7 +55,7 @@ export default class SettingsUpgrade extends Vue {
       // build up + submit form
       const formData = new FormData();
       formData.append('file', file);
-      const eModalUpdate = (this.$refs.modalUpdate instanceof Vue) ? this.$refs.modalUpdate as Modal : undefined;
+      const eModalUpdate = (this.$refs.modalUpdate instanceof Vue) ? this.$refs.modalUpdate as BModal : undefined;
       try {
         if (eModalUpdate) { eModalUpdate.show(); }
         this.updateInProgress = true;
@@ -66,7 +66,7 @@ export default class SettingsUpgrade extends Vue {
         // wait for reconnect
         const promiseReconnect = new Promise((resolve) => {
           let unwatch: (() => void) | undefined;
-          let timerId: NodeJS.Timer | undefined;
+          let timerId: NodeJS.Timeout | undefined;
           const done = () => {
             if (timerId) { clearTimeout(timerId); timerId = undefined; }
             if (unwatch) { unwatch(); unwatch = undefined; }

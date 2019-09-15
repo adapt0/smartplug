@@ -26,3 +26,8 @@ npm run lint
 ```
 npm run test:unit
 ```
+
+### Start instance, proxy requests to target
+```
+PROXY=192.168.1.149 npm start
+```

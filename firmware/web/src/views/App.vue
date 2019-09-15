@@ -38,9 +38,10 @@ html, body, #app {
   & > .body {
     flex: 1;
     display: flex;
+    max-height: 100vh;
 
     & > .route {
-      overflow: scroll;
+      overflow: auto;
       flex: 1;
       min-width: 0;
     }
