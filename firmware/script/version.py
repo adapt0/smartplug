@@ -48,7 +48,7 @@ def version_generate_contents():
         version["stringFull"] = Template(
             "v${major}.${minor}.${patch} [${gitRevShort}${gitModifiedStar}]"
         ).substitute(version)
-        print version["stringFull"]
+        print(version["stringFull"])
 
         # populate source
         return Template("""/*

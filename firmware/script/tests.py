@@ -109,9 +109,9 @@ arduino_sources = [
     ('StreamString.cpp', arduino_sources_opts),
     ('WString.cpp', arduino_sources_opts),
 ]
-arduino_lib = test_env.StaticLibrary(os.path.join(projectbuild_dir, 'arduino'), [
+arduino_lib = test_env.StaticLibrary(os.path.join(projectbuild_dir, 'arduino'), list(
     map(search_cpppaths, arduino_sources)
-])
+))
 
 
 #############################################################################
