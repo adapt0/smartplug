@@ -93,6 +93,7 @@ class VesyncHijack {
         // parse command line
         commander
             .version(this.version_)
+            .option('-i, --ip <value>')
             .option('-s, --ssid <value>')
             .option('-b, --bssid <value>')
             .option('-p, --password <value>')
@@ -100,7 +101,7 @@ class VesyncHijack {
         ;
 
         // console.log('Retrieving WiFi settings');
-        await this.getNetworkInfo_(commander.ssid, commander.bssid, commander.password);
+        await this.getNetworkInfo_(commander.ssid, commander.bssid, commander.password, commander.ip);
         console.log(`Using SSID "${this.apSsid_}" (BSSID: ${this.apBssidStr_}, Local IP: ${this.ipAddress_})`);
 
         // listen for device UDP announcements, direct them to our web server
@@ -149,19 +150,23 @@ class VesyncHijack {
 
     /////////////////////////////////////////////////////////////////////////
     /// retrieve network information
-    async getNetworkInfo_(apSsid, apBssid, apPassword) {
+    async getNetworkInfo_(apSsid, apBssid, apPassword, ipAddress) {
         // find first non-internal IPv4 interface 
-        const itf = (() => {
+        const ourIp = (() => {
             for (const [name, addresses] of Object.entries(os.networkInterfaces())) {
                 const f = addresses.find((addr) => (false === addr.internal && 'IPv4' === addr.family));
                 if (f) {
-                    f.name = name;
-                    return f;
+                    if (ipAddress) {
+                        if (name === ipAddress || ipAddress === f.address) return f.address;
+                    } else {
+                        console.log(`Using ${name} ${f.address}`);
+                        return f.address;
+                    }
                 }
             }
             return null;
         })();
-        if (!itf) throw new Error('Failed to find our IP address');
+        if (!ourIp) throw new Error('Failed to find our IP address');
 
         // AP password
         if (apPassword == null) throw new Error('Need to specify your WiFi password (-p)');
@@ -201,7 +206,7 @@ class VesyncHijack {
         this.apBssid_ = this.apBssidStr_.split(':').map(b => parseInt(b, 16));
 
         //
-        this.ipAddress_ = itf.address;
+        this.ipAddress_ = ourIp;
     }
 
     /////////////////////////////////////////////////////////////////////////
