@@ -85,7 +85,7 @@ def elf_to_user_bin(source, target, env):
         env['READELF'],
         '--headers',
         path_elf,
-    ], env=env['ENV'])
+    ], env=env['ENV'], universal_newlines=True)
 
     # print(headers)
 
@@ -161,8 +161,12 @@ def elf_to_user_bin(source, target, env):
             rom_data = f_elf.read(rom_length)
             f_bin.write(rom_data)
 
-            for r in rom_data:
-                checksum ^= ord(r)
+            if sys.version_info < (3,):
+                for r in rom_data:
+                    checksum ^= ord(r)
+            else:
+                for r in rom_data:
+                    checksum ^= r
 
         pad = 16 - (f_bin.tell() % 16) - 1
         f_bin.write(bytearray([0] * pad))
@@ -172,13 +176,13 @@ def elf_to_user_bin(source, target, env):
         # calc "CRC32" (per Espressif's SDK)
         f_bin.seek(0)
         block_size = 1024 * 64
-        crc = 0 
+        crc = 0 # ~0xffffffff
         while True:
             d = f_bin.read(block_size)
             if 0 == len(d):
                 break
-            crc = binascii.crc32(d, crc) 
-        crc = abs(crc) + (-1 if crc < 0 else 1)  # required sign twiddle tweak
+            crc = binascii.crc32(d, crc) & 0xffffffff
+        crc = ~crc & 0xffffffff
         f_bin.write(struct.pack('<L', crc))
 
     except Exception as e:
@@ -213,6 +217,7 @@ def add_user_target(elf_target, user_mode):
 
     BUILD_TARGETS.append(program[0])
     env.AddPostAction(program[0], elf_to_user_bin)
+    env.AlwaysBuild(env.Alias("user{}".format(user_mode), None, program))
 
 
 # add user1 + user2 outputs dependent on the main application target
