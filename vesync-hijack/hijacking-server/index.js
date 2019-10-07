@@ -15,6 +15,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 
 const ChildProcess = require('child_process');
 const commander = require('commander');
+const crypto = require('crypto');
 const dgram = require('dgram'); 
 const fs = require('fs');
 const http = require('http');
@@ -449,22 +450,57 @@ class VesyncHijack {
         this.websocketServer_.on('connection', (ws, req) => {
             const remoteAddress = req.connection.remoteAddress;
             console.log(`Accepted WebSocket from ${remoteAddress}`);
+            
+            const aesKey = 'llwantaeskey1.01';
+            const aesIv = 'llwantaesivv1.01';
+            let wsEncrypted = false;
+
+            const wsSendMessage = (msg) => {
+                let data;
+                if (wsEncrypted) {
+                    const cipher = crypto.createCipheriv('aes-128-cbc', aesKey, aesIv);
+                    cipher.setAutoPadding(false);
+                    data = cipher.update(msg + '\0'.repeat(16 - msg.length % 16));
+                } else {
+                    data = msg;
+                }
+                ws.send(data);
+            };
 
             ws.on('message', (data) => {
                 try {
-                    const msg = JSON.parse(data);
-                    // console.log(msg);
+                    const msg = (() => {
+                        if (data instanceof Buffer) {
+                            wsEncrypted = true;
+
+                            // decrypt
+                            const decipher = crypto.createDecipheriv('aes-128-cbc', aesKey, aesIv);
+                            decipher.setAutoPadding(false);
+                            const d = decipher.update(data);
+
+                            const idx = d.findIndex((c) => (0 === c));
+                            return d.slice(0, (idx > 0) ? idx : undefined);
+                        } else {
+                            return data;
+                        }
+                    })();
+
+                    const json = JSON.parse(msg);
+                    console.log(json);
+
+                    // ignore uri requests
+                    if (null != json.uri) return;
 
                     // verify some device details before we initiate an upgrade
-                    if (   'vesync_wifi_outlet' !== msg.deviceName
-                        || 'wifi-switch' !== msg.type)
+                    if (   'vesync_wifi_outlet' !== json.deviceName
+                        || 'wifi-switch' !== json.type)
                     {
-                        throw new Error(`Unexpected device ${msg.deviceName} ${msg.type}`);
+                        throw new Error(`Unexpected device ${json.deviceName} ${json.type}`);
                     }
 
                     // login success
                     const d = new Date();
-                    ws.send(JSON.stringify({
+                    wsSendMessage(JSON.stringify({
                         uri: '/loginReply',
                         error: 0,
                         wd: 3,
@@ -481,7 +517,7 @@ class VesyncHijack {
                     if (!ws.sentUpgrade_) {
                         console.log('Initiating device upgrade');
                         ws.sentUpgrade_ = true;
-                        ws.send(JSON.stringify({
+                        wsSendMessage(JSON.stringify({
                             uri: '/upgrade',
                             url: `http://${this.ipAddress_}:${this.httpPort_}`,
                             newVersion: '2.00',
