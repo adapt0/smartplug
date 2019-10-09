@@ -36,10 +36,10 @@ def version_generate_contents():
 
         # grab git rev
         # https://stackoverflow.com/questions/5143795/how-can-i-check-in-a-bash-script-if-my-local-git-repository-has-changes
-        version["gitModified"] = "true" if subprocess.call(["git", "diff-index", "--quiet", "HEAD"]) else "false"
+        version["gitModified"] = "true" if subprocess.call(["git", "diff-index", "--quiet", "HEAD"], universal_newlines=True) else "false"
         version["gitModifiedStar"] = "*" if "true" == version["gitModified"] else ""
-        version["gitRev"] = subprocess.check_output(["git", "rev-parse", "HEAD"]).strip()
-        version["gitRevShort"] = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"]).strip()
+        version["gitRev"] = subprocess.check_output(["git", "rev-parse", "HEAD"], universal_newlines=True).strip()
+        version["gitRevShort"] = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], universal_newlines=True).strip()
 
         # fill in strings
         version["string"] = Template(
