@@ -174,13 +174,13 @@ class VesyncHijack {
         this.apPass_ = apPassword;
 
         //
-        if (apSsid && apBssid) {
+        if (null != apSsid) {
             // use provided wireless details
             this.apSsid_ = apSsid;
             this.apBssidStr_ = apBssid;
         } else {
             // find local wifi device
-            console.log('Looking for local WiFi interface (use --ssid & -bssid to override)');
+            console.log('Looking for local WiFi interface (use --ssid & --bssid to override)');
             const res = this.getWifiInfo_();
             if (!res || !res.success) {
                 throw new Error('Failed to find WiFi interface');
@@ -194,16 +194,11 @@ class VesyncHijack {
                 throw new Error(`Specified WiFi SSID "${apSsid}" doesn't match connected "${res.ssid}"?`);
             }
 
-            // retrieve network interface info
-            // itf = os.networkInterfaces()[res.interface];
-            // if (!itf) throw new Error(`Not such network interface '${res.interface}'`);
-            // itf = itf.find(i => 'IPv4' === i.family);
-            // if (!itf) throw new Error(`Not such IPv4 network interface '${res.interface}'`);
-
             // fill in SSID
             this.apSsid_ = res.ssid;
             this.apBssidStr_ = res.bssid;
         }
+        if (!this.apBssidStr_) this.apBssidStr_ = '00:00:00:00:00:00';
         this.apBssid_ = this.apBssidStr_.split(':').map(b => parseInt(b, 16));
 
         //
