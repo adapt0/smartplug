@@ -31,7 +31,7 @@ void WifiManager::begin() {
     // AP hostname includes chip id
     const String chipId{ESP.getChipId(), HEX};
     apHostname_ = "ESP8266-" + chipId;
-    apPassword_ = chipId + chipId;
+    apPassword_ = emptyString; // chipId + chipId;
 
     // restore/update persisted host name
     if (propSysNetHostname_->length()) {
