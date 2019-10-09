@@ -26,7 +26,7 @@ public:
     void operator()() override;
 
 private:
-    void startNetwork_();
+    uint32_t smartConfig_();
     bool startUpgrade_(const ip_addr* addr);
     bool startUpgradeDance_(const ip_addr* addr);
     size_t retrieveWriteFile_(const ip_addr* addr, const char* filename, unsigned int flashDest, unsigned int flashSize);

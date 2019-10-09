@@ -13,6 +13,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 #include "http_connection.h"
 #include "net_conn.h"
 #include <esp_common.h>
+#include <smartconfig.h>
 #include <upgrade.h>
 
 //- externals
@@ -25,65 +26,97 @@ const int iromAddr = (int)&_irom0_text_start;   ///< address we are running out 
 /////////////////////////////////////////////////////////////////////////////
 /// Upgrade task entry point
 void TaskUpgrade::operator()() {
-    // start network
-    startNetwork_();
-
-    // wait for multicast announcement packets
-    {
-        struct ip_addr mcast_addr;
-        IP4_ADDR(&mcast_addr, 234,100,100,100);
-
-        NetConn udp{NETCONN_UDP};
-        udp.setRecvTimeout(1000); // ms
-        udp.joinLeaveGroup(&mcast_addr, IP_ADDR_ANY, NETCONN_JOIN);
-        udp.bind(IP_ADDR_ANY, MCAST_PORT);
-
-        while (true) {
-            // printf("status: %d\r\n", wifi_station_get_connect_status());
-
-            auto pkt = udp.recv();
-            if (!pkt) continue;
-
-            // printf("UDP Packet! %d\n", pkt.length);
-
-            // expect packets to be filled with ones
-            if (pkt.size() > 0 && '1' == pkt.data()[0]) {
-                auto* addr = pkt.fromAddr();
-                if (startUpgrade_(addr)) break;
-                system_upgrade_flag_set(UPGRADE_FLAG_IDLE);
-
-                // wait a bit
-                vTaskDelay(5000 / portTICK_RATE_MS);
-            }
+    while (true) {
+        // perform smart config
+        const auto ip4 = smartConfig_();
+        if (0 == ip4) {
+            vTaskDelay(1000 / portTICK_RATE_MS);
+            continue;
         }
 
+        //
+        ip_addr addr;
+        ip4_addr_set_u32(&addr, ip4);
+        if (!startUpgrade_(&addr)) {
+            vTaskDelay(1000 / portTICK_RATE_MS);            
+            continue;
+        }
+        system_upgrade_flag_set(UPGRADE_FLAG_IDLE);
+
+        // wait a bit
+        vTaskDelay(5000 / portTICK_RATE_MS);
+
         printf("Done!");
+        break;
     }
 }
 
 /////////////////////////////////////////////////////////////////////////////
-/// start network
-void TaskUpgrade::startNetwork_() {
-    // connect to AP
-    station_config config;
-    // if (wifi_station_get_config_default(&config)) {
-    if (wifi_station_get_config(&config)) {
-        // printf("SSID: %s\r\n", config.ssid);
-        if (!wifi_set_opmode_current(STATION_MODE)) {
-            printf("Failed to set STATION mode :(\r\n");
+/// perform smart config
+uint32_t TaskUpgrade::smartConfig_() {
+    wifi_station_disconnect();
+    if (!wifi_set_opmode_current(STATION_MODE)) {
+        printf("Failed to set STATION mode :(\r\n");
+    }
+
+    static auto sc_queue = xQueueCreate(1, sizeof(uint32_t));
+
+    // based on examples/smart_config/user/user_main.c
+    smartconfig_start([](sc_status status, void* pdata) {
+        switch(status) {
+        case SC_STATUS_WAIT:
+            printf("SC_STATUS_WAIT\n");
+            break;
+        case SC_STATUS_FIND_CHANNEL:
+            printf("SC_STATUS_FIND_CHANNEL\n");
+            break;
+        case SC_STATUS_GETTING_SSID_PSWD:
+        {
+            printf("SC_STATUS_GETTING_SSID_PSWD\n");
+            const auto* type = (sc_type*)pdata;
+            if (*type == SC_TYPE_ESPTOUCH) {
+                printf("SC_TYPE:SC_TYPE_ESPTOUCH\n");
+            } else {
+                printf("SC_TYPE:SC_TYPE_AIRKISS\n");
+            }
+            break;
         }
+        case SC_STATUS_LINK:
+        {
+            printf("SC_STATUS_LINK\n");
+            auto* sta_conf = (station_config*)pdata;
+    
+            wifi_station_set_config(sta_conf);
+            wifi_station_disconnect();
+            wifi_station_connect();
+            break;
+        }
+        case SC_STATUS_LINK_OVER:
+            printf("SC_STATUS_LINK_OVER\n");
+            if (pdata) {
+                uint8 phone_ip[4] = {0};
+                memcpy(phone_ip, pdata, sizeof(phone_ip));
+                printf("Phone ip: %d.%d.%d.%d\n", phone_ip[0], phone_ip[1], phone_ip[2], phone_ip[3]);
 
-        // printf("status: %d\r\n", wifi_station_get_connect_status());
+                xQueueSend(sc_queue, phone_ip, 0);
+            }
+            smartconfig_stop();
+            break;
+        }
+    });
 
-        wifi_station_connect();
+    //
+    uint32_t ip{0};
+    if (pdTRUE == xQueueReceive(sc_queue, &ip, 5 * 60 * 1000 / portTICK_RATE_MS)) {
+        printf("xQueueReceive %x\n", ip);
+        return ip;
     }
 
-//TODO: fall back on AP if STA is unavailable
+    //
+    printf("Smart config timeout. Retrying\n");
+    smartconfig_stop();
 
-    // wait for an IP
-    while (STATION_GOT_IP != wifi_station_get_connect_status()) {
-        vTaskDelay(1000 / portTICK_RATE_MS);
-    }
+    return 0;
 }
 
 /////////////////////////////////////////////////////////////////////////////
