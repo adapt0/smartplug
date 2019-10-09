@@ -98,24 +98,38 @@ class VesyncHijack {
             .option('-s, --ssid <value>')
             .option('-b, --bssid <value>')
             .option('-p, --password <value>')
+            .option('-d, --device <value>')
             .parse(process.argv)
         ;
+
+        if (commander.device) commander.bssid = ''; // not needed
 
         // console.log('Retrieving WiFi settings');
         await this.getNetworkInfo_(commander.ssid, commander.bssid, commander.password, commander.ip);
         console.log(`Using SSID "${this.apSsid_}" (BSSID: ${this.apBssidStr_}, Local IP: ${this.ipAddress_})`);
 
-        // listen for device UDP announcements, direct them to our web server
-        const f1 = this.beginUdp_();
+        const promises = [];
 
         // start our web server
-        const f2 = this.beginHttpServer_();
+        promises.push(this.beginHttpServer_());
 
-        // kick off Smart Config (beginUdp_ must be called first)
-        console.log('Sending Smart Config...');
-        const f3 = this.beginAirKiss_();
+        if (commander.device) {
+            // connect directly to specified device
+            promises.push((async () => {
+                console.log(`Attempting to connect to device ${commander.device}`);
+                await this.connectToDevice_(commander.device);
+            })());
 
-        await Promise.all([f1, f2, f3]);
+        } else {
+            // listen for device UDP announcements, direct them to our web server
+            promises.push(this.beginUdp_());
+
+            // kick off Smart Config (beginUdp_ must be called first)
+            console.log('Sending Smart Config...');
+            promises.push(this.beginAirKiss_());
+        }
+
+        await Promise.all(promises);
     }
 
     /////////////////////////////////////////////////////////////////////////
@@ -234,41 +248,7 @@ class VesyncHijack {
             this.udpLastDevice_ = ipDevice;
             this.udpLastDeviceTime_ = elapsedSeconds();
 
-            let client = null;
-            try {
-                client = await new Promise((resolve) => {
-                    const c = net.createConnection(
-                        this.deviceConfigPort_, ipDevice,
-                        () => resolve(c)
-                    );
-                });
-                console.log(`Connected to device ${ipDevice}`);
-
-                const clientSend = (json) => {
-                    return new Promise((resolve) => {
-                        const msg = JSON.stringify(json);
-                        // console.log('<=', msg);
-                        client.write( Buffer.concat([
-                            Buffer.from([ msg.length ]),
-                            Buffer.from(msg),
-                        ]), resolve );
-                    });
-                };
-
-                // trigger configure
-                await clientSend({
-                    'uri' : '/beginConfigRequest',
-                    'wifiID' : this.apSsid_,
-                    'wifiPassword' : this.apPass_,
-                    'account' : 'dummyAccount',
-                    'key' : 123,
-                    'serverIP' : this.ipAddress_,
-                });
-
-            } finally {
-                client.end();
-                client = null;
-            }
+            await this.connectToDevice_(ipDevice);
         });
     }
 
@@ -369,6 +349,77 @@ class VesyncHijack {
                 await delay(0.5);
             }
             await delay(0.5);
+        }
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+    /// connected to specified device
+    async connectToDevice_(ipDevice) {
+        let client = null;
+        try {
+            // await new Promise((dataResolve, dataReject) => {
+            client = await new Promise((resolve) => {
+                const c = net.createConnection(
+                    this.deviceConfigPort_, ipDevice,
+                    () => resolve(c)
+                );
+            });
+            console.log(`Connected to device ${ipDevice}`);
+
+            let clientResponse = null;
+            let clientData = Buffer.alloc(0);
+            client.on('data', (data) => {
+                clientData = Buffer.concat([clientData, data]);
+
+                let len = 1 + clientData[0];
+                if (clientData.length <= len) return; // wait for rest of packet
+
+                let n = clientData.indexOf(0); // check for null terminator
+                n = (n >= 0 && n < len) ? n : len;
+                const body = clientData.slice(1, n).toString('utf8');
+
+                clientData = Buffer.from(clientData.slice(len));
+                if (clientData.length > 0 && 0 == clientData[0]) clientData = clientData.slice(1);
+
+                if (clientResponse) {
+                    clientResponse.resolve(JSON.parse(body));
+                } else {
+                    console.log(JSON.parse(body));
+                }
+            });
+            client.on('end', (e) => {
+                if (clientResponse) clientResponse.reject(e);
+            });
+
+            const clientSend = (json) => {
+                return new Promise((resolve) => {
+                    const msg = JSON.stringify(json);
+                    // console.log('<=', msg);
+                    client.write( Buffer.concat([
+                        Buffer.from([ msg.length ]),
+                        Buffer.from(msg),
+                    ]), resolve);
+                });
+            };
+
+            // trigger configure
+            await clientSend({
+                'uri' : '/beginConfigRequest',
+                'wifiID' : this.apSsid_,
+                'wifiBssid': '',
+                'wifiPassword' : this.apPass_,
+                'account' : '0',
+                'key' : Date.now(),
+                'serverIP' : this.ipAddress_,
+            });
+
+            // waiting for response
+            const response = await new Promise((resolve, reject) => { clientResponse = { resolve, reject }; });
+            console.log(response);
+
+        } finally {
+            if (client) client.end();
+            client = null;
         }
     }
 
