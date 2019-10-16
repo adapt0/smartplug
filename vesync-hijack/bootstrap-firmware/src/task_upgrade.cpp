@@ -8,13 +8,16 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 
 //- includes
 #include "task_upgrade.h"
+#include "task_connect.h"
 #include "eboot_command.h"
 #include "flash_writer.h"
 #include "http_connection.h"
 #include "net_conn.h"
+#include <cJSON.h>
 #include <esp_common.h>
 #include <smartconfig.h>
 #include <upgrade.h>
+#include <espressif/espconn.h>
 
 //- externals
 extern unsigned int _irom0_text_start;  ///< irom0 start address
@@ -23,9 +26,27 @@ extern unsigned int _irom0_text_start;  ///< irom0 start address
 const unsigned int SPI_FLASH_BASE = 0x40200000; ///< start of SPI flash
 const int iromAddr = (int)&_irom0_text_start;   ///< address we are running out of
 
+//- statics
+TaskUpgrade* TaskUpgrade::instance_;
+
+/////////////////////////////////////////////////////////////////////////////
+/// helper to return a string in JSON object or nullptr when not valid
+const char* jsonGetObjectString(cJSON* object, const char *string) {
+    const auto* item = cJSON_GetObjectItem(object, string);
+    return (item && cJSON_String == item->type) ? item->valuestring : nullptr;
+}
+
+
 /////////////////////////////////////////////////////////////////////////////
 /// Upgrade task entry point
 void TaskUpgrade::operator()() {
+    instance_ = this;
+
+    espconn_init();
+
+    // queue for smartConfig_/connectTo_ notifications
+    config_queue_ = xQueueCreate(1, sizeof(uint32_t));
+
     while (true) {
         // perform smart config
         const auto ip4 = smartConfig_();
@@ -52,14 +73,123 @@ void TaskUpgrade::operator()() {
 }
 
 /////////////////////////////////////////////////////////////////////////////
+/// tcp accepted connection
+void TaskUpgrade::tcpOnAccept_(void* arg) {
+    auto* pesp_conn = (struct espconn*)arg;
+    auto* task = (TaskUpgrade*)pesp_conn->reserve;
+    printf("tcp connection\r\n");
+
+    pesp_conn->reserve = new TcpClient{task}; 
+    espconn_regist_disconcb(pesp_conn, tcpOnDisconnect_);
+    espconn_regist_recvcb(pesp_conn, tcpOnRecv_);
+}
+
+/////////////////////////////////////////////////////////////////////////////
+/// tcp disconnect
+void TaskUpgrade::tcpOnDisconnect_(void* arg) {
+    auto* pesp_conn = (struct espconn*)arg;
+
+    auto* client = (TcpClient*)pesp_conn->reserve;
+    if (client) {
+        pesp_conn->reserve = nullptr;
+        delete client;
+    }
+    printf("tcp disconnect\r\n");
+}
+
+/////////////////////////////////////////////////////////////////////////////
+/// received some data from a tcp connection
+void TaskUpgrade::tcpOnRecv_(void* arg, char* pusrdata, unsigned short length) {
+    if (0 == length) return;
+
+    auto* pesp_conn = (espconn*)arg;
+    auto* client = (TcpClient*)pesp_conn->reserve;
+    if (client) {
+        while (length > 0) {
+            // message length
+            if (0 == client->length) {
+                client->length = static_cast<uint8_t>(pusrdata[0]);
+                ++pusrdata;
+                --length;
+            }
+
+            // message data
+            const auto bytes_to_copy = std::min<uint16_t>(client->length - client->received, length);
+            memcpy(client->data + client->received, pusrdata, bytes_to_copy);
+            client->received += bytes_to_copy;
+            pusrdata += bytes_to_copy;
+            length -= bytes_to_copy;
+
+            // received whole message
+            if (client->length == client->received) {
+                client->data[client->length] = 0;
+                client->length = 0;
+                client->received = 0;
+
+                std::unique_ptr<cJSON, decltype(&cJSON_Delete)> root{cJSON_Parse(client->data), &cJSON_Delete};
+                if (root) client->task->tcpOnRecvMessage_(pesp_conn, root.get());
+            }
+        }
+    }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+/// on message
+void TaskUpgrade::tcpOnRecvMessage_(espconn* pesp_conn, cJSON* object) {
+    const auto* uri = jsonGetObjectString(object, "uri");
+    if (!uri) return;
+
+    printf("uri: %s\n", uri);
+    if (0 == strcmp(uri, "/beginConfigRequest")) {
+        const auto* wifiID       = jsonGetObjectString(object, "wifiID");
+        const auto* wifiPassword = jsonGetObjectString(object, "wifiPassword");
+        const auto* serverIPstr  = jsonGetObjectString(object, "serverIP");
+
+        ip_addr_t serverIP;
+        if (!wifiID || !wifiPassword || !serverIPstr) {
+            printf("beginConfigRequest missing arguments\n");
+        } else if (!ipaddr_aton(serverIPstr, &serverIP)) {
+            printf("beginConfigRequest invalid serverIP\n");
+        } else {
+            const char* msg = "\0x06{ OK }";
+            espconn_sent(pesp_conn, (uint8_t*)msg, strlen(msg) + 1);
+
+            printf("wifiID: %s\n", wifiID);
+            printf("wifiPassword: %s\n", wifiPassword);
+            printf("serverIP: %s (%d)\n", serverIPstr, ip4_addr_get_u32(&serverIP));
+
+            TaskBase::create<TaskConnect>(
+                "connect", config_queue_,
+                wifiID, wifiPassword,
+                ip4_addr_get_u32(&serverIP)
+            );
+        }
+    }               
+}
+
+/////////////////////////////////////////////////////////////////////////////
 /// perform smart config
 uint32_t TaskUpgrade::smartConfig_() {
     wifi_station_disconnect();
-    if (!wifi_set_opmode_current(STATION_MODE)) {
-        printf("Failed to set STATION mode :(\r\n");
+    if (!wifi_set_opmode_current(STATIONAP_MODE)) {
+        printf("Failed to set STATIONAP_MODE :(\r\n");
     }
 
-    static auto sc_queue = xQueueCreate(1, sizeof(uint32_t));
+    // TCP server
+    {
+        static espconn esp_conn;
+        esp_conn.reserve = this;
+        esp_conn.type = ESPCONN_TCP;
+        esp_conn.state = ESPCONN_NONE;
+        static esp_tcp esptcp;
+        esp_conn.proto.tcp = &esptcp;
+        esp_conn.proto.tcp->local_port = TCP_PORT;
+        espconn_regist_connectcb(&esp_conn, tcpOnAccept_);
+    
+        const auto ret = espconn_accept(&esp_conn);
+        os_printf("espconn_accept [%d] !!! \r\n", ret);
+    }
+
 
     // based on examples/smart_config/user/user_main.c
     smartconfig_start([](sc_status status, void* pdata) {
@@ -86,7 +216,7 @@ uint32_t TaskUpgrade::smartConfig_() {
             printf("SC_STATUS_LINK\n");
             auto* sta_conf = (station_config*)pdata;
     
-            wifi_station_set_config(sta_conf);
+            wifi_station_set_config_current(sta_conf);
             wifi_station_disconnect();
             wifi_station_connect();
             break;
@@ -98,7 +228,7 @@ uint32_t TaskUpgrade::smartConfig_() {
                 memcpy(phone_ip, pdata, sizeof(phone_ip));
                 printf("Phone ip: %d.%d.%d.%d\n", phone_ip[0], phone_ip[1], phone_ip[2], phone_ip[3]);
 
-                xQueueSend(sc_queue, phone_ip, 0);
+                xQueueSend(instance_->config_queue_, phone_ip, 0);
             }
             smartconfig_stop();
             break;
@@ -107,7 +237,7 @@ uint32_t TaskUpgrade::smartConfig_() {
 
     //
     uint32_t ip{0};
-    if (pdTRUE == xQueueReceive(sc_queue, &ip, 5 * 60 * 1000 / portTICK_RATE_MS)) {
+    if (pdTRUE == xQueueReceive(config_queue_, &ip, 5 * 60 * 1000 / portTICK_RATE_MS)) {
         printf("xQueueReceive %x\n", ip);
         return ip;
     }
