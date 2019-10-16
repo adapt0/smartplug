@@ -18,8 +18,15 @@ void TaskBlink::operator()() {
     GPIO_AS_OUTPUT(1 << pin_);
     while (true) {
         GPIO_OUTPUT_SET(pin_, 0);
-        vTaskDelay(1000/portTICK_RATE_MS);
+        vTaskDelay(100/portTICK_RATE_MS);
         GPIO_OUTPUT_SET(pin_, 1);
+        vTaskDelay(100/portTICK_RATE_MS);
+
+        GPIO_OUTPUT_SET(pin_, 0);
+        vTaskDelay(100/portTICK_RATE_MS);
+        GPIO_OUTPUT_SET(pin_, 1);
+        vTaskDelay(100/portTICK_RATE_MS);
+
         vTaskDelay(1000/portTICK_RATE_MS);
     }
 }
