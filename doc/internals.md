@@ -14,11 +14,11 @@ With the Micro controller's EMI shield being branded as "VeSync".
 
 The micro controller board slots into the other two boards making eight points of conductivity:
 
-1. Relay (also lights LED yellow)
-2. HLW8012 CF pin (pulse for active power)
-3. Blue LED
-4. HLW8012 CF1 pin (voltage/current 50% duty cycle)
-5. SW1 button
+1. IO4 - Relay (also lights LED yellow)
+2. IO12 - HLW8012 CF pin (pulse for active power)
+3. IO5 - Blue LED
+4. IO13 - HLW8012 CF1 pin (voltage/current 50% duty cycle)
+5. IO14 - SW1 button
 6. Not connected
 7. GND
 8. 5V
