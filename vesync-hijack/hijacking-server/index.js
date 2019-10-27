@@ -430,9 +430,11 @@ class VesyncHijack {
         // rolling our own HTTP handler
         // was having difficulty with express' handling of vesync requests :(
         const staticPath = path.join(__dirname, 'assets');
-        const httpLogger = morgan('combined');
+        const httpLogRequest = morgan(':remote-addr - :remote-user [:date[clf]] ":method :url HTTP/:http-version"', {immediate: true});
+        const httpLogResponse = morgan('combined');
         this.httpServer_ = http.createServer((req, res) => {
-            httpLogger(req, res, () => {});
+            httpLogRequest(req, res, () => {});
+            httpLogResponse(req, res, () => {});
 
             // determine path, checking that it doesn't escape
             let filePath = path.resolve(path.join(staticPath, req.url));
