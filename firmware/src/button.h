@@ -12,7 +12,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 #include <OneButton.h>
 
 //- forwards
-class SmartPlug;
+class Settings;
 class WifiManager;
 
 /////////////////////////////////////////////////////////////////////////////
@@ -20,7 +20,7 @@ class WifiManager;
 /// https://github.com/mathertel/OneButton
 class Button {
 public:
-    Button(int pin, SmartPlug& smartPlug, WifiManager& wifiManager, bool& otaInProgress);
+    Button(int pin, Settings& settings, WifiManager& wifiManager, bool& otaInProgress);
     ~Button();
 
     void begin();
@@ -30,7 +30,7 @@ private:
     static Button*  instance_;          ///< singleton instance
 
     OneButton       button_;
-    SmartPlug&      smartPlug_;
+    Settings&       settings_;
     WifiManager&    wifiManager_;
     bool&           otaInProgress_;
 };

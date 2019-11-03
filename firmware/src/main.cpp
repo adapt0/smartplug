@@ -33,7 +33,7 @@ namespace {
 
     bool                otaInProgress = false;
 
-    Button              button{SmartPlug::PIN_SW1, smartPlug, wifiManager, otaInProgress};
+    Button              button{SmartPlug::PIN_SW1, settings, wifiManager, otaInProgress};
 }
 
 /////////////////////////////////////////////////////////////////////////////

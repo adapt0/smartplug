@@ -157,14 +157,19 @@ JsonRpcError Settings::methodPing_(const JsonVariant& /*params*/, JsonDocument& 
 JsonRpcError Settings::methodRelay_(const JsonVariant& params, JsonDocument& result) {
     if (!params.is<bool>()) { result.set("Expected boolean"); return JsonRpcError::INVALID_PARAMS; }
 
-    const auto newValue = params.as<bool>();
-    if (propRelay_.value() != newValue) {
-        propRelay_.set(newValue);
-        if (onRelay_) onRelay_(newValue);
-    }
+    setRelay(params.as<bool>());
 
     result.set(true);
     return JsonRpcError::NO_ERROR;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+/// update relay state
+void Settings::setRelay(bool state) {
+    if (propRelay_.value() != state) {
+        propRelay_.set(state);
+        if (onRelay_) onRelay_(state);
+    }
 }
 
 /////////////////////////////////////////////////////////////////////////////

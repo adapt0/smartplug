@@ -9,7 +9,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 
 //- includes
 #include "button.h"
-#include "smartplug.h"
+#include "settings.h"
 #include "wifi_manager.h"
 #include <cassert>
 
@@ -17,9 +17,9 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 Button* Button::instance_ = nullptr;
 
 /////////////////////////////////////////////////////////////////////////////
-Button::Button(int pin, SmartPlug& smartPlug, WifiManager& wifiManager, bool& otaInProgress)
+Button::Button(int pin, Settings& settings, WifiManager& wifiManager, bool& otaInProgress)
 : button_(pin, true)
-, smartPlug_(smartPlug)
+, settings_(settings)
 , wifiManager_(wifiManager)
 , otaInProgress_(otaInProgress)
 {
@@ -37,8 +37,8 @@ void Button::begin() {
     // one button callbacks doesn't allow for lambda captures :(
     button_.attachClick([] {
         if (instance_->otaInProgress_) return;
-        instance_->smartPlug_.setRelay(
-            !instance_->smartPlug_.relay()
+        instance_->settings_.setRelay(
+            !instance_->settings_.relay()
         );
     });
     // button.attachDoubleClick([] {

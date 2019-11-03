@@ -95,6 +95,10 @@ public:
         onRelay_ = std::move(onRelay);
     }
 
+    /// current relay value
+    bool relay() { return propRelay_.value(); }
+    void setRelay(bool state);
+
     /////////////////////////////////////////////////////////////////////////
     /// sys.net
     PropertyNode& propSysNet() { return propSysNet_; }
