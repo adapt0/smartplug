@@ -96,6 +96,7 @@ interface IPendingRequest {
 
 export default class {
   private connected_ = false;
+  private connectTimer_?: NodeJS.Timer;
   private debug_ = false;
   private eventHub_: CombinedVueInstance<Vue, { connected: boolean }, object, object, any>;
   private heartbeatInterval_ = 3000; // ms between heartbeats
@@ -126,6 +127,13 @@ export default class {
     this.ws_.onclose = () => this.onDisconnect_();
     this.ws_.onerror = (error: Event) => this.onError_(error);
     this.ws_.onmessage = (m) => this.onMessage_(JSON.parse(m.data));
+
+    this.connectTimer_ = setTimeout(async () => {
+      if (!this.connected_) {
+        // we haven't been able to connect
+        this.eventHub_.$emit('disconnect');
+      }
+    }, 1500);
   }
 
   public request(method: string, params?: any) {
@@ -166,6 +174,10 @@ export default class {
 
   private async onConnected_() {
     this.debugLog_('connected');
+    if (this.connectTimer_) {
+      clearTimeout(this.connectTimer_);
+      this.connectTimer_ = undefined;
+    }
     this.connected_ = true;
     this.reconnectDelay_ = 0;
     this.eventHub_.connected = true;
@@ -184,7 +196,7 @@ export default class {
 
     if (this.heartbeatTimer_) {
       clearTimeout(this.heartbeatTimer_);
-      delete this.heartbeatTimer_;
+      this.heartbeatTimer_ = undefined;
     }
 
     // notify pending requests
@@ -197,7 +209,7 @@ export default class {
     // delay before retrying connection
     this.reconnectDelay_ = Math.min(Math.max(500, this.reconnectDelay_ * 2), 5000);
     this.timerId_ = setTimeout(() => {
-      delete this.timerId_;
+      this.timerId_ = undefined;
       this.connect();
     }, this.reconnectDelay_);
   }
@@ -258,7 +270,7 @@ export default class {
         this.debugLog_('heartbeat', e);
         if (null != this.ws_) {
           this.ws_.close();
-          delete this.ws_;
+          this.ws_ = undefined;
         }
         this.onDisconnect_();
       }
