@@ -49,6 +49,7 @@ public:
 
 private:
     void disconnect_();
+    bool getConfig_(station_config& conf) const;
     bool onNetworkSettings_(NetworkUPtr&& network);
     void tickApplyNetworkSettings_();
     void updateLed_();

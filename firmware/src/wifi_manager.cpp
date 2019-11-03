@@ -41,6 +41,7 @@ void WifiManager::begin() {
 
     // begin wifi (restores from SDKs stored settings)
     WiFi.begin();
+    WiFi.persistent(false); // disable persistence (we'll re-enable when we want to persist)
     propSysNetSsid_.set(WiFi.SSID());
 
     // configure static
@@ -219,7 +220,14 @@ void WifiManager::setModeAP()  {
 /////////////////////////////////////////////////////////////////////////////
 /// set STA
 bool WifiManager::setModeSTA() {
-    return setModeSTA(WiFi.SSID().c_str(), WiFi.psk().c_str());
+    // retrieve config from storage (as we've disabled persistence)
+    station_config conf;
+    if (!getConfig_(conf)) {
+        printf("Failed to get default WiFi config");
+        return false;
+    }
+
+    return setModeSTA((const char*)conf.ssid, (const char*)conf.password);
 }
 /// set STA
 bool WifiManager::setModeSTA(const char* ssid, const char* pass) {
@@ -240,6 +248,19 @@ bool WifiManager::onNetworkSettings_(Settings::NetworkUPtr&& network) {
 }
 
 /////////////////////////////////////////////////////////////////////////////
+/// retrieve underlying config
+bool WifiManager::getConfig_(station_config& conf) const {
+    if (!wifi_station_get_config_default(&conf)) {
+        memset(&conf, 0, sizeof(conf));
+        return false;
+    } else {
+        conf.password[sizeof(conf.password) - 1] = 0;
+        conf.ssid[sizeof(conf.ssid) - 1] = 0;
+        return true;
+    }
+}
+
+/////////////////////////////////////////////////////////////////////////////
 /// apply new network setting as part of the main loop
 void WifiManager::tickApplyNetworkSettings_() {
     NetworkUPtr network{std::move(networkToApply_)};
@@ -247,12 +268,15 @@ void WifiManager::tickApplyNetworkSettings_() {
 
     printf("Applying new network settings...\r\n");
 
-    if (WiFi.SSID() != network->ssid || network->password.length() > 0) {
+    station_config conf;
+    if (!getConfig_(conf) || !network->ssid.equals((const char*)conf.ssid) || network->password.length() > 0) {
         propSysNetSsid_.set(network->ssid);
+        WiFi.persistent(true);
         const auto res = setModeSTA(network->ssid.c_str(), network->password.c_str());
         if (!res) printf("Failed to begin a new WiFi connection via WiFi.begin\r\n");
+        WiFi.persistent(false);
     } else if (WIFI_STA != WiFi.getMode()) {
-        const auto res = setModeSTA();
+        const auto res = setModeSTA((const char*)conf.ssid, (const char*)conf.password);
         if (!res) printf("Failed to switch to STA mode\r\n");
     }
 
