@@ -14,6 +14,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 
 //- forwards
 class Settings;
+class WifiManager;
 
 /////////////////////////////////////////////////////////////////////////////
 /// web server
@@ -21,7 +22,10 @@ class Settings;
 class WebServer {
 public:
     explicit WebServer(Settings& settings);
-    void begin();
+    WebServer(const WebServer&) = delete;
+    WebServer& operator=(const WebServer&) = delete;
+
+    void begin(WifiManager& wifi);
     void tick();
 
 private:

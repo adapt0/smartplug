@@ -109,6 +109,9 @@ void WifiManager::tick() {
             } else {
                 printf("WiFi Disconnected\r\n");
             }
+
+            // notify
+            if (onNetwork_) onNetwork_(connected);
         }
     }
 
@@ -190,6 +193,7 @@ void WifiManager::disconnect_() {
     if (staConnected_) printf("WiFi Disconnected\r\n");
     staConnected_ = false;
 
+    if (onNetwork_) onNetwork_(false);
     WiFi.disconnect();
     WiFi.waitForConnectResult();
 }
@@ -210,28 +214,21 @@ void WifiManager::setModeAP()  {
 
     WiFi.mode(WIFI_AP);
     WiFi.waitForConnectResult();
-
-    if (WiFi.softAP(apHostname_.c_str(), apPassword_.c_str())) {
-        const auto ip = WiFi.softAPIP();
-        printf("AP '%s' (IP: %s)\r\n", apHostname_.c_str(), ip.toString().c_str());
-    } else {
-        printf("Failed to set AP mode\r\n");
-    }
 }
 
 /////////////////////////////////////////////////////////////////////////////
 /// set STA
-void WifiManager::setModeSTA() {
-    setModeSTA(WiFi.SSID().c_str(), WiFi.psk().c_str());
+bool WifiManager::setModeSTA() {
+    return setModeSTA(WiFi.SSID().c_str(), WiFi.psk().c_str());
 }
 /// set STA
-void WifiManager::setModeSTA(const char* ssid, const char* pass) {
+bool WifiManager::setModeSTA(const char* ssid, const char* pass) {
     disconnect_();
 
     WiFi.mode(WIFI_STA);
     WiFi.waitForConnectResult();
 
-    WiFi.begin(ssid, pass);
+    return WiFi.begin(ssid, pass);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -250,12 +247,13 @@ void WifiManager::tickApplyNetworkSettings_() {
 
     printf("Applying new network settings...\r\n");
 
-    if (WIFI_STA != WiFi.getMode() || WiFi.SSID() != network->ssid || network->password.length() > 0) {
+    if (WiFi.SSID() != network->ssid || network->password.length() > 0) {
         propSysNetSsid_.set(network->ssid);
-        WiFi.disconnect();
-        WiFi.mode(WIFI_STA);
-        const auto res = WiFi.begin(network->ssid.c_str(), network->password.c_str());
+        const auto res = setModeSTA(network->ssid.c_str(), network->password.c_str());
         if (!res) printf("Failed to begin a new WiFi connection via WiFi.begin\r\n");
+    } else if (WIFI_STA != WiFi.getMode()) {
+        const auto res = setModeSTA();
+        if (!res) printf("Failed to switch to STA mode\r\n");
     }
 
     // update hostname

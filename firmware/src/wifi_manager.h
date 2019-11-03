@@ -20,6 +20,9 @@ class WifiManager {
 public:
     using NetworkUPtr = Settings::NetworkUPtr;
 
+    /// callback on network change
+    using FuncOnNetwork = std::function<void (bool)>;
+
     explicit WifiManager(Settings& settings, int pinLed = -1);
 
     void begin();
@@ -34,10 +37,15 @@ public:
     IPAddress ipAddress() const;
     int mode() const;
 
+    /// network changed
+    void onNetwork(FuncOnNetwork onNetwork) {
+        onNetwork_ = std::move(onNetwork);
+    }
+
     void setModeOff();
     void setModeAP();
-    void setModeSTA();
-    void setModeSTA(const char* ssid, const char* pass);
+    bool setModeSTA();
+    bool setModeSTA(const char* ssid, const char* pass);
 
 private:
     void disconnect_();
@@ -65,6 +73,8 @@ private:
     };
 
     Settings&       settings_;              ///< settings access
+
+    FuncOnNetwork   onNetwork_;             ///< on network settings
 
     PropertyString  propSysNetHostname_;
     PropertyString  propSysNetSsid_;

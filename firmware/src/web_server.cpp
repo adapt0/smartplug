@@ -12,6 +12,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root. */
 #include "settings.h"
 #include "ssdp.h"
 #include "web_server_asset_handler.h"
+#include "wifi_manager.h"
 #include <ArduinoJson.h>
 
 /////////////////////////////////////////////////////////////////////////////
@@ -42,7 +43,7 @@ WebServer::WebServer(Settings& settings)
 
 /////////////////////////////////////////////////////////////////////////////
 /// begin web server
-void WebServer::begin() {
+void WebServer::begin(WifiManager& wifi) {
     // request logger
     server_.addHandler(new WebRequestLogger());
 
@@ -177,28 +178,37 @@ void WebServer::begin() {
         }
     });
 
+    // restart server on network changes
+    wifi.onNetwork([this](bool connected) {
+        if (!connected) {
+            serverWebSocket_.closeAll();
+            serverWebSocket_.cleanupClients(0);
+        }
+    });
+
     //
     server_.begin();
 }
 
 /////////////////////////////////////////////////////////////////////////////
 void WebServer::tick() {
-    
+    // periodically clean up old clients
+    serverWebSocket_.cleanupClients();
 }
 
 /////////////////////////////////////////////////////////////////////////////
 /// web socket event
 void WebServer::onWebSocketEvent_(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType type, void* arg, uint8_t* data, size_t len) {
     if (type == WS_EVT_CONNECT) {
-printf("ws[%s][%u] connect\r\n", server->url(), client->id());
-// client->printf("Hello Client %u :)", client->id());
-// client->ping();
+        printf("ws[%s][%u] connect\r\n", server->url(), client->id());
+        // client->printf("Hello Client %u :)", client->id());
+        // client->ping();
     } else if (type == WS_EVT_DISCONNECT) {
-printf("ws[%s][%u] disconnect\r\n", server->url(), client->id());
+        printf("ws[%s][%u] disconnect\r\n", server->url(), client->id());
     } else if (type == WS_EVT_ERROR) {
-printf("ws[%s][%u] error(%u): %s\r\n", server->url(), client->id(), *((uint16_t*)arg), (char*)data);
+        printf("ws[%s][%u] error(%u): %s\r\n", server->url(), client->id(), *((uint16_t*)arg), (char*)data);
     } else if (type == WS_EVT_PONG) {
-printf("ws[%s][%u] pong[%u]: %s\r\n", server->url(), client->id(), len, (len)?(char*)data:"");
+        printf("ws[%s][%u] pong[%u]: %s\r\n", server->url(), client->id(), len, (len)?(char*)data:"");
     } else if (type == WS_EVT_DATA) {
         // printf("ws[%s][%u] data\r\n", server->url(), client->id());
 

@@ -202,7 +202,7 @@ void setup() {
 
     //
     printf("Starting web server...\r\n");
-    webServer.begin();
+    webServer.begin(wifiManager);
 
     //
     static Console::Command commands[] = {
