@@ -34,7 +34,7 @@ SmartPlug::~SmartPlug() {
 /////////////////////////////////////////////////////////////////////////////
 /// smart plug
 void SmartPlug::begin() {
-    pinMode(PIN_SW1, INPUT);
+    pinMode(PIN_SW1, INPUT_PULLUP);
 
     pinMode(PIN_CF,  INPUT);
     pinMode(PIN_CF1, INPUT);

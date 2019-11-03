@@ -56,8 +56,10 @@ void Button::begin() {
 
             // switch to/from AP mode
             if (WIFI_AP != instance_->wifiManager_.mode()) {
+                printf("Button - Switch to AP\r\n");
                 instance_->wifiManager_.setModeAP();
             } else {
+                printf("Button - Switch to STA\r\n");
                 instance_->wifiManager_.setModeSTA();
             }
         }
