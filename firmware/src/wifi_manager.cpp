@@ -30,15 +30,14 @@ WifiManager::WifiManager(Settings& settings, int pinLed)
 void WifiManager::begin() {
     // AP hostname includes chip id
     const String chipId{ESP.getChipId(), HEX};
-    apHostname_ = "ESP8266-" + chipId;
-    apPassword_ = emptyString; // chipId + chipId;
+    apHostname_ = "ESP-" + chipId;
+    apPassword_ = emptyString;
 
     // restore/update persisted host name
-    if (propSysNetHostname_->length()) {
-        WiFi.hostname(propSysNetHostname_.value());
-    } else {
-        propSysNetHostname_.set(WiFi.hostname());
+    if (0 == propSysNetHostname_->length()) {
+        propSysNetHostname_.set(apHostname_);
     }
+    WiFi.hostname(propSysNetHostname_.value());
 
     // begin wifi (restores from SDKs stored settings)
     WiFi.begin();
@@ -60,8 +59,10 @@ void WifiManager::begin() {
 
     //
     const auto mode = WiFi.getMode();
-    if (WIFI_STA == mode && 0 == WiFi.SSID().length()) {
-        setModeAP(); // switch over to AP mode if there's no stored SSID available
+    if (WIFI_AP_STA == mode || (WIFI_AP != mode && 0 == WiFi.SSID().length())) {
+        // switch over to AP mode if there's no stored SSID available
+        // or we've been set to AP_STA (newly provisioned)
+        setModeAP();
     }
 
     // register for new network settings
@@ -251,6 +252,8 @@ void WifiManager::tickApplyNetworkSettings_() {
 
     if (WIFI_STA != WiFi.getMode() || WiFi.SSID() != network->ssid || network->password.length() > 0) {
         propSysNetSsid_.set(network->ssid);
+        WiFi.disconnect();
+        WiFi.mode(WIFI_STA);
         const auto res = WiFi.begin(network->ssid.c_str(), network->password.c_str());
         if (!res) printf("Failed to begin a new WiFi connection via WiFi.begin\r\n");
     }
@@ -268,7 +271,7 @@ void WifiManager::tickApplyNetworkSettings_() {
     }
 
     // IP settings
-    if (INADDR_NONE == network->ipv4Address) {
+    if (INADDR_ANY == network->ipv4Address || INADDR_NONE == network->ipv4Address) {
         propSysNetDhcp_.set(true);
         if (DHCP_STOPPED == wifi_station_dhcpc_status()) {
             if (!WiFi.config(0u, 0u, 0u)) printf("Failed to configure DHCP via WiFi.config\r\n");

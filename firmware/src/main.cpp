@@ -116,6 +116,7 @@ void cmdWifi(const char* argv[], int argc) {
             break;
         case WIFI_AP:
             printf("WIFI: AP\r\n");
+            printf("SSID: %s\r\n", wifiManager.hostname().c_str());
             printf("IP: %s\r\n", wifiManager.ipAddress().toString().c_str());
             break;
         case WIFI_AP_STA:

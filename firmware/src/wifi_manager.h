@@ -26,7 +26,7 @@ public:
     void tick();
 
     /// our hostname
-    String hostname() const { return WiFi.hostname(); }
+    String hostname() const { return propSysNetHostname_.value(); }
 
     /// connected?
     bool isConnected() const { return staConnected_; }
