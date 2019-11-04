@@ -4,6 +4,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
 -->
 <script lang="ts">
 import { Component, Mixins, Prop, Vue, Watch } from 'vue-property-decorator';
+import { ChartOptions } from 'chart.js';
 import { Line } from 'vue-chartjs';
 
 @Component
@@ -16,11 +17,11 @@ export default class Chart extends Mixins(Line) {
     datasets: any[];
   };
 
-  get options() {
+  get options(): ChartOptions {
     return {
       responsive: true,
       maintainAspectRatio: false,
-      animation: false,
+      animation: undefined,
       legend: {
         display: false,
       },
