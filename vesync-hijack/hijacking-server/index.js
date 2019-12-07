@@ -369,6 +369,8 @@ class VesyncHijack {
             let clientResponse = null;
             let clientData = Buffer.alloc(0);
             client.on('data', (data) => {
+                for (let i = 0; i < data.length; i += 32) console.log(`${i.toString(16).padStart(4, '0')} ${data.toString('hex', i, i + 32)}`);
+
                 clientData = Buffer.concat([clientData, data]);
 
                 let len = 1 + clientData[0];
