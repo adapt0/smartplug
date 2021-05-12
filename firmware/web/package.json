@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "bootstrap-vue": "^2.0.4",
-    "chart.js": "^2.9.2",
+    "chart.js": "^2.9.4",
     "core-js": "^3.3.2",
     "vue": "^2.6.10",
     "vue-awesome": "^3.5.4",
