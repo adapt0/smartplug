@@ -102,10 +102,12 @@ class VesyncHijack {
             .parse(process.argv)
         ;
 
-        if (commander.device) commander.bssid = ''; // not needed
+        const options = commander.opts();
+
+        if (options.device) options.bssid = ''; // not needed
 
         // console.log('Retrieving WiFi settings');
-        await this.getNetworkInfo_(commander.ssid, commander.bssid, commander.password, commander.ip);
+        await this.getNetworkInfo_(options.ssid, options.bssid, options.password, options.ip);
         console.log(`Using SSID "${this.apSsid_}" (BSSID: ${this.apBssidStr_}, Local IP: ${this.ipAddress_})`);
 
         const promises = [];
@@ -113,11 +115,11 @@ class VesyncHijack {
         // start our web server
         promises.push(this.beginHttpServer_());
 
-        if (commander.device) {
+        if (options.device) {
             // connect directly to specified device
             promises.push((async () => {
-                console.log(`Attempting to connect to device ${commander.device}`);
-                await this.connectToDevice_(commander.device);
+                console.log(`Attempting to connect to device ${options.device}`);
+                await this.connectToDevice_(options.device);
             })());
 
         } else {
