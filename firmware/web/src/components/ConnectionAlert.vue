@@ -12,7 +12,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
             Connection lost. Attempting to reconnect...
           </div>
           <div class="col text-right">
-            <icon class="align-text-bottom" name="spinner" pulse />
+            <font-awesome-icon class="align-text-bottom" icon="spinner" pulse />
           </div>
         </template>
         <template v-else>
@@ -29,7 +29,6 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
 
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
-import 'vue-awesome/icons/spinner';
 
 @Component
 export default class ConnectionAlert extends Vue {

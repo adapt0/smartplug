@@ -7,13 +7,13 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
 <template>
   <div class="tree">
     <div class="collapsable" @click="toggle">
-      <icon :name="(itemCollapsed) ? 'caret-right' : 'caret-down'"/><span class="key">{{name}}</span>
+      <font-awesome-icon :icon="(itemCollapsed) ? 'caret-right' : 'caret-down'" /><span class="key">{{name}}</span>
     </div>
     <template v-if="!itemCollapsed">
       <ul>
         <template v-for="e in entries">
           <li :key=e.key v-if="e.value === null || typeof(e.value) !== 'object'">
-            <icon name="square" /><span class="key">{{e.key}}:</span> <span class="value">{{e.value}}</span>
+            <font-awesome-icon icon="square" /><span class="key">{{e.key}}:</span> <span class="value">{{e.value}}</span>
           </li>
           <li :key=e.key v-else>
             <Tree :name=e.key :value=e.value :collapsed="collapsedChildren" />
@@ -26,9 +26,6 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
 
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
-import 'vue-awesome/icons/caret-down';
-import 'vue-awesome/icons/caret-right';
-import 'vue-awesome/icons/square';
 
 @Component({ name: 'Tree' })
 export default class Tree extends Vue {
@@ -77,13 +74,13 @@ span.key {
   font-weight: bold;
 }
 
-.fa-icon {
+[role="img"] {
   margin-right: 4px;
   text-anchor: center;
   vertical-align: text-bottom;
   width: 8px;
-}
-li > .fa-icon {
-  color: #777;
+  li > & {
+    color: #777;
+  }
 }
 </style>

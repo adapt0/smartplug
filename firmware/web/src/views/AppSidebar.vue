@@ -6,9 +6,9 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
   <div class="d-flex flex-column sidebar">
     <b-nav vertical class="flex-nowrap">
       <b-nav-text><router-link to="/"><h5>SmartPlug</h5></router-link></b-nav-text>
-      <b-nav-item to="/home"><icon name="home"/>Home</b-nav-item>
+      <b-nav-item to="/home"><font-awesome-icon icon="home" />Home</b-nav-item>
 
-      <b-nav-item to="/settings"><icon name="cog"/>Settings</b-nav-item>
+      <b-nav-item to="/settings"><font-awesome-icon icon="cog" />Settings</b-nav-item>
 
       <router-link tag="div" to="/settings">
         <b-nav vertical>
@@ -19,8 +19,8 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
         </b-nav>
       </router-link>
 
-      <b-nav-item to="/developer"><icon name="bug"/>Developer</b-nav-item>
-      <b-nav-item to="/about"><icon name="info-circle"/>About</b-nav-item>
+      <b-nav-item to="/developer"><font-awesome-icon icon="bug" />Developer</b-nav-item>
+      <b-nav-item to="/about"><font-awesome-icon icon="info-circle" />About</b-nav-item>
     </b-nav>
     <div class="mt-auto text-center p-4">
       <bootstrap-toggle v-model="relay" :disabled="!$store.state.Rpc.connected"></bootstrap-toggle>
@@ -31,10 +31,6 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import BootstrapToggle from '@/components/BootstrapToggle.vue';
-import 'vue-awesome/icons/bug';
-import 'vue-awesome/icons/cog';
-import 'vue-awesome/icons/home';
-import 'vue-awesome/icons/info-circle';
 
 @Component({ components: { BootstrapToggle } })
 export default class AppSidebar extends Vue {
@@ -75,7 +71,7 @@ export default class AppSidebar extends Vue {
     display: flex;
     align-items: center;
 
-    .fa-icon {
+    [role="img"] {
       margin-right: 8px;
       width: 14px;
     }

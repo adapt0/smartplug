@@ -7,16 +7,24 @@
 import Vue from 'vue';
 import App from '@/views/App.vue';
 import BootstrapVue from 'bootstrap-vue';
-import Icon from 'vue-awesome/components/Icon.vue';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { library } from '@fortawesome/fontawesome-svg-core';
 import router from '@/router';
 import store from '@/store';
 import VueResource from 'vue-resource';
+import {
+  faBug, faCaretDown, faCaretRight, faCog, faHome, faInfoCircle, faSpinner, faSquare,
+} from '@fortawesome/free-solid-svg-icons';
 
 Vue.config.productionTip = false;
 
+library.add(
+  faBug, faCaretDown, faCaretRight, faCog, faHome, faInfoCircle, faSpinner, faSquare,
+);
+Vue.component('font-awesome-icon', FontAwesomeIcon);
+
 Vue.use(BootstrapVue);
 Vue.use(VueResource);
-Vue.component('icon', Icon);
 
 new Vue({
   router,

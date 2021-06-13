@@ -24,7 +24,7 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
               <h4 class="mb-0">Update in progress...</h4>
             </div>
             <div class="col-sm text-right">
-              <icon class="align-bottom" name="spinner" pulse />
+              <font-awesome-icon class="align-bottom" icon="spinner" pulse />
             </div>
           </div>
         </div>
@@ -36,7 +36,6 @@ Licensed under the MIT License. Refer to LICENSE file in the project root.
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { BModal } from 'bootstrap-vue';
-import 'vue-awesome/icons/spinner';
 
 @Component
 export default class SettingsUpgrade extends Vue {
@@ -64,11 +63,11 @@ export default class SettingsUpgrade extends Vue {
         const promisePost = this.$http.post('/api/v1/update', formData);
 
         // wait for reconnect
-        const promiseReconnect = new Promise((resolve) => {
+        const promiseReconnect = new Promise<void>((resolve) => {
           let unwatch: (() => void) | undefined;
-          let timerId: NodeJS.Timeout | undefined;
+          let timerId: number | undefined;
           const done = () => {
-            if (timerId) { clearTimeout(timerId); timerId = undefined; }
+            if (timerId) { window.clearTimeout(timerId); timerId = undefined; }
             if (unwatch) { unwatch(); unwatch = undefined; }
             resolve();
           };
@@ -79,7 +78,7 @@ export default class SettingsUpgrade extends Vue {
               if (!oldValue && newValue) { done(); }
             },
           );
-          timerId = setTimeout(done, 30000);
+          timerId = window.setTimeout(done, 30000);
         });
 
         await Promise.race([
