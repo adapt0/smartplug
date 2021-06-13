@@ -226,7 +226,7 @@ class VesyncHijack {
         this.udpSocket_ = dgram.createSocket('udp4');
         await new Promise((resolve) => {
             this.udpSocket_.bind(this.listenPort_, this.ipAddress_, resolve);
-            console.log(`Listening for devices on UDP port ${this.listenPort_}`);
+            console.log(`Listening for devices on UDP port ${this.ipAddress_}:${this.listenPort_}`);
         });
         this.udpSocket_.setMulticastInterface(this.ipAddress_);
         this.udpSocket_.setBroadcast(true);
@@ -248,7 +248,11 @@ class VesyncHijack {
             this.udpLastDevice_ = ipDevice;
             this.udpLastDeviceTime_ = elapsedSeconds();
 
-            await this.connectToDevice_(ipDevice);
+            try {
+                await this.connectToDevice_(ipDevice);
+            } catch (e) {
+                console.error('Failed to connect to device', e);
+            }
         });
     }
 
@@ -389,8 +393,8 @@ class VesyncHijack {
                     console.log(JSON.parse(body));
                 }
             });
-            client.on('end', (e) => {
-                if (clientResponse) clientResponse.reject(e);
+            client.on('end', () => {
+                if (clientResponse) clientResponse.reject(new Error('Device disconnected'));
             });
 
             const clientSend = (json) => {
@@ -469,7 +473,8 @@ class VesyncHijack {
             try {
                 if ('GET' === req.method || 'HEAD' === req.method) {
                     res.writeHead(200, {
-                        'Content-Length': stat.size
+                        'Content-Length': stat.size,
+                        'Content-Type': 'application/octet-stream',
                     });
 
                     if ('GET' === req.method) {
@@ -516,6 +521,10 @@ class VesyncHijack {
                 }
                 ws.send(data);
             };
+
+            ws.on('error', (error) => {
+                console.error(error);
+            });
 
             ws.on('message', (data) => {
                 try {
