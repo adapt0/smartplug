@@ -1,4 +1,4 @@
-# SmartPlug firmware
+# Etekcity SmartPlug firmware + upgrading tool
 
 Alternative firmware for Etekcity's "Voltson Wi-Fi Smart Plug Mini Outlet" (ESW01-USA).
 
@@ -23,6 +23,7 @@ Used for loading custom firmware onto Etekcity outlets.
 * [vesync-hijack/](vesync-hijack/bootstrap-firmware/)
 * [vesync-hijack/bootstrap-firmware/](vesync-hijack/bootstrap-firmware/)
 
+This is able to deploy ESP8266 custom firmware (such as [Tasmota](https://tasmota.github.io/)) provided it's < ~1MB (see #25 for details).
 
 ## Documentation
 
