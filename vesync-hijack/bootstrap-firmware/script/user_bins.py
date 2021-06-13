@@ -176,13 +176,17 @@ def elf_to_user_bin(source, target, env):
         # calc "CRC32" (per Espressif's SDK)
         f_bin.seek(0)
         block_size = 1024 * 64
-        crc = 0 # ~0xffffffff
+        crc = 0
         while True:
             d = f_bin.read(block_size)
             if 0 == len(d):
                 break
-            crc = binascii.crc32(d, crc) & 0xffffffff
-        crc = ~crc & 0xffffffff
+            crc = binascii.crc32(d, crc)
+        if crc < 0:
+            crc = abs(crc) - 1
+        else:
+            crc = abs(crc) + 1
+
         f_bin.write(struct.pack('<L', crc))
 
     except Exception as e:
