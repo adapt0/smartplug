@@ -117,6 +117,12 @@ def elf_to_user_bin(source, target, env):
         rom_length = rom_section['size']
         section_length = (rom_length + 15) & ~0xF
 
+        # sanity check that we're using the right linker scripts
+        if 1 == int(env['USERMODE']):
+            assert rom_section['address'] == 0x40201010, "irom0 at unexpected offset 0x{:x} (expected 0x{:x}) - wrong linker script?)".format(rom_section['address'], 0x40201010)
+        else:
+            assert rom_section['address'] == 0x40281010, "irom0 at unexpected offset 0x{:x} (expected 0x{:x}) - wrong linker script?)".format(rom_section['address'], 0x40281010)
+
         # irom header
         f_bin.write(struct.pack(
             '<BBBBLLL',
@@ -208,10 +214,18 @@ def add_user_target(elf_target, user_mode):
     :param user_mode: (int) 1 for user1, 2 for user2. Dictates the applicable linker script
     """
 
+    linker_script = '../ld/eagle.app.v6.new.1024.app{}.ld'.format(user_mode)
+
     e = elf_target.get_build_env().Clone(
-        LDSCRIPT_PATH='../ld/eagle.app.v6.new.1024.app{}.ld'.format(user_mode),
+        LDSCRIPT_PATH=linker_script,
         USERMODE=str(user_mode)
     )
+
+    # HACK replace linker script with desired partitioned one
+    # HACK this seems hacky, not sure the correct way to be doing this?
+    link_flags = e.get('LINKFLAGS')
+    idx = link_flags.index('-T')
+    link_flags[idx + 1] = linker_script
 
     program = e.Program(
         os.path.join(os.path.dirname(elf_target.get_path()), "user{}.elf".format(user_mode)),
