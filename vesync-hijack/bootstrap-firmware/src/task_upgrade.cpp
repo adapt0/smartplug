@@ -171,8 +171,8 @@ void TaskUpgrade::tcpOnRecvMessage_(espconn* pesp_conn, cJSON* object) {
 /// perform smart config
 uint32_t TaskUpgrade::smartConfig_() {
     wifi_station_disconnect();
-    if (!wifi_set_opmode_current(STATIONAP_MODE)) {
-        printf("Failed to set STATIONAP_MODE :(\r\n");
+    if (!wifi_set_opmode_current(STATION_MODE)) {
+        printf("Failed to set STATION_MODE :(\r\n");
     }
 
     // TCP server
