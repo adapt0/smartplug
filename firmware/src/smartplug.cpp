@@ -78,11 +78,11 @@ void SmartPlug::setRelay(bool state) {
 }
 
 /////////////////////////////////////////////////////////////////////////////
-ICACHE_RAM_ATTR void SmartPlug::onRisingInterrupt_() {
+IRAM_ATTR void SmartPlug::onRisingInterrupt_() {
     pulseStart = micros();
     attachInterrupt(pulsePin, onFallingInterrupt_, FALLING);
 }
-ICACHE_RAM_ATTR void SmartPlug::onFallingInterrupt_() {
+IRAM_ATTR void SmartPlug::onFallingInterrupt_() {
     const auto pulseWidth = micros() - pulseStart;
     detachInterrupt(pulsePin);
     if (pulseWidth <= 0) return;

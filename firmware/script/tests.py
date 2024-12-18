@@ -34,13 +34,13 @@ import subprocess
 
 Import("env", "projenv")
 
-# print env.Dump()
-# print projenv.Dump()
+# print(env.Dump())
+# print(projenv.Dump())
 
 # paths
-projectbuild_dir = os.path.join(projenv['PROJECTBUILD_DIR'], 'tests')
-projectlib_dir = os.path.join(projenv['PROJECT_DIR'], 'lib')
-doctest_path = os.path.join(projectlib_dir, 'doctest-1.2.7')
+project_build_dir = os.path.join(projenv['PROJECT_BUILD_DIR'], 'tests')
+project_lib_dir = os.path.join(projenv['PROJECT_DIR'], 'lib')
+doctest_path = os.path.join(project_lib_dir, 'doctest-1.2.7')
 
 
 # retrieve path to framework-arduinoespressif8266 test stubs
@@ -67,13 +67,13 @@ test_env = Environment(
     CPPPATH=[
         # projenv['CPPPATH'],
         doctest_path,
-        os.path.join(projenv['PROJECTTEST_DIR'], 'stub'),
+        os.path.join(projenv['PROJECT_TEST_DIR'], 'stub'),
         get_framework_stubs_path(),
     ],
     CXXFLAGS=projenv['CXXFLAGS'],
     PROJECT_DIR=projenv['PROJECT_DIR'],
-    PROJECTSRC_DIR=projenv['PROJECTSRC_DIR'],
-    PROJECTTEST_DIR=projenv['PROJECTTEST_DIR'],
+    PROJECT_SRC_DIR=projenv['PROJECT_SRC_DIR'],
+    PROJECT_TEST_DIR=projenv['PROJECT_TEST_DIR'],
 )
 
 test_env.Append(
@@ -109,7 +109,7 @@ arduino_sources = [
     ('StreamString.cpp', arduino_sources_opts),
     ('WString.cpp', arduino_sources_opts),
 ]
-arduino_lib = test_env.StaticLibrary(os.path.join(projectbuild_dir, 'arduino'), list(
+arduino_lib = test_env.StaticLibrary(os.path.join(project_build_dir, 'arduino'), list(
     map(search_cpppaths, arduino_sources)
 ))
 
@@ -122,9 +122,9 @@ bld = Builder(action=builder_unit_test)
 test_env.Append(BUILDERS={'Test': bld})
 
 # tests
-program = test_env.Program(os.path.join(projectbuild_dir, 'tests'), [
-    Glob(os.path.join(test_env['PROJECTTEST_DIR'], '*.cpp')),
-    Glob(os.path.join(test_env['PROJECTSRC_DIR'], '*.cpp')),
+program = test_env.Program(os.path.join(project_build_dir, 'tests'), [
+    Glob(os.path.join(test_env['PROJECT_TEST_DIR'], '*.cpp')),
+    Glob(os.path.join(test_env['PROJECT_SRC_DIR'], '*.cpp')),
 ], LIBS = [arduino_lib])
 
 tests = [test_env.Test("buildtests", program)]
